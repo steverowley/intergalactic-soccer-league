@@ -50,6 +50,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
 // @ts-ignore — Deno-only import, resolved at deploy time.
 import { rngFor } from './grammar.ts';
+import { runCosmicFeud } from './cosmicFeudTick.ts';
 import type {
   EntityRow,
   FocusEnactedRow,
@@ -892,6 +893,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
+    // ── The cosmic feud (#760) ───────────────────────────────────────────
+    // The Arbiter and the Trickster act between matches as the Architect
+    // does, and the three undo each other by rock, paper, scissors. At most
+    // one act per tick and two a day; see cosmicFeudTick.ts. Fail-soft.
+    try {
+      const feud = await runCosmicFeud(db, tickRng ?? Math.random, new Date());
+      if (feud) allInserted.push(feud);
+    } catch (err) {
+      console.warn('[galaxy-tick] cosmic feud threw:', err);
+    }
+
     // ── Daybreak Digest (Phase 6b) ──────────────────────────────────────
     // Once per UTC day during the daybreak window (06–10 UTC) the cron
     // synthesises a single morning-anchor narrative summarising overnight
@@ -1219,7 +1231,7 @@ async function runMidWeekIntrusion(
     old_value:    oldVal,
     new_value:    newVal,
     reason,
-    meta:         { team_id: player.team_id, kind: 'mid_week_trait_shift', source: 'architect-galaxy-tick' },
+    meta:         { team_id: player.team_id, kind: 'mid_week_trait_shift', source: 'architect-galaxy-tick', actor: 'architect' },
   });
 
   // ── 6. Public-facing narrative ───────────────────────────────────────
