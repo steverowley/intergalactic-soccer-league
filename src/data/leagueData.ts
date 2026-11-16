@@ -420,3 +420,51 @@ export const TEAMS_BY_LEAGUE: Record<string, Team[]> = {
     },
   ],
 };
+
+// ── Home worlds ───────────────────────────────────────────────────────────────
+// Where each club's `location` sits in the solar system and how it looks from
+// a ship. Read by the match-day journey (features/match/logic/journey.ts):
+// distance from the Sun (AU, today's rough orbital radius) decides how long a
+// team ship takes to reach the stadium, so Sedna sets off hours before Mars.
+// Colours are world data like the club colours above, so they live here.
+
+/** A home world: orbital radius and the colour it is drawn in. */
+export interface World {
+  /** Mean distance from the Sun in astronomical units. */
+  au: number;
+  /** Drawn colour of the world. */
+  color: string;
+  /** Moons and colonies orbit something bigger; drawn smaller. */
+  small: boolean;
+}
+
+export const WORLDS: Record<string, World> = {
+  Mercury: { au: 0.39, color: '#9C8F84', small: false },
+  Venus: { au: 0.72, color: '#E3B96A', small: false },
+  Earth: { au: 1.0, color: '#4A7FC1', small: false },
+  'Largest Orbital Colony': { au: 1.0, color: '#B8C4CC', small: true },
+  Mars: { au: 1.52, color: '#C1440E', small: false },
+  Vesta: { au: 2.36, color: '#A39E93', small: true },
+  Juno: { au: 2.67, color: '#9A938A', small: true },
+  Ceres: { au: 2.77, color: '#8E8A84', small: true },
+  Pallas: { au: 2.77, color: '#A09A90', small: true },
+  'Asteroid Belt Colony': { au: 2.8, color: '#8C8279', small: true },
+  Psyche: { au: 2.92, color: '#B0A48C', small: true },
+  Hygiea: { au: 3.14, color: '#6F6A64', small: true },
+  Jupiter: { au: 5.2, color: '#D3A574', small: false },
+  Europa: { au: 5.2, color: '#C9B99A', small: true },
+  Ganymede: { au: 5.2, color: '#9B8E7E', small: true },
+  Callisto: { au: 5.2, color: '#6E6259', small: true },
+  'Saturn Rings': { au: 9.54, color: '#E2CF98', small: false },
+  Titan: { au: 9.54, color: '#D9A441', small: true },
+  Enceladus: { au: 9.54, color: '#E8EEF2', small: true },
+  Uranus: { au: 19.2, color: '#9FD8DE', small: false },
+  Pluto: { au: 39.5, color: '#CDB89C', small: true },
+  Orcus: { au: 39.4, color: '#7E7D80', small: true },
+  Charon: { au: 39.5, color: '#9A9187', small: true },
+  Haumea: { au: 43.1, color: '#D8D4CC', small: true },
+  Makemake: { au: 45.8, color: '#B66A4E', small: true },
+  'Outer Kuiper Belt': { au: 50, color: '#5E6670', small: true },
+  Eris: { au: 67.8, color: '#D6D2CF', small: true },
+  Sedna: { au: 86, color: '#A33A2B', small: true },
+};
