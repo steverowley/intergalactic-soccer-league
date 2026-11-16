@@ -18,7 +18,7 @@
 // stars) runs at a chunky pixel frame rate and stops under reduced motion;
 // the ships' travel is the timetable itself.
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { color, font, hairline, size, space, tone, type } from '../../../../shared/design';
 import { Crest, Stack, Tag } from '../../../../shared/ui';
 import { useReducedMotion } from '@features/entities';
@@ -26,7 +26,8 @@ import { formatSpan, legState, legStatus, matchJourney, worldOf, type Leg } from
 import { resolveKits } from '../../logic/viewer';
 import { PIXEL_SCALE } from '../viewer/render';
 import { groundFor } from '../../../../data/stadiums';
-import { ART, drawJourney, labelAnchors, starfield } from './journeyArt';
+import { ART, drawJourney, sceneGeometry, starfield } from './journeyArt';
+import { placeLabel, type Box } from './labelPlacement';
 
 export { starfield } from './journeyArt';
 
@@ -73,7 +74,14 @@ export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }
   const awayWorld = worldOf(away.location);
   const derby = stadiumWorld.name === awayWorld.name;
   const ground = useMemo(() => groundFor(home.id), [home.id]);
-  const anchors = labelAnchors(awayWorld.look.size, ground.look.style);
+  const geometry = useMemo(() => sceneGeometry(awayWorld.look, ground.look.style, ground.capacity), [awayWorld.look, ground]);
+  const labels = [
+    { key: 'away', text: derby ? `${awayWorld.name}, far side` : awayWorld.name, target: geometry.away, order: ['above', 'right', 'below', 'left'] as const },
+    { key: 'base', text: 'Training base', target: geometry.base, order: ['left', 'below', 'above'] as const },
+    { key: 'ground', text: stadiumWorld.name, target: geometry.ground, order: ['above', 'left', 'right'] as const },
+  ];
+  const frameRef = useRef<HTMLDivElement>(null);
+  const placed = useLabelLayout(frameRef, labels, geometry);
 
   const awayState = legState(journey.away, now);
   const homeState = legState(journey.home, now);
@@ -132,6 +140,7 @@ export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }
 
       {/* The match viewer's frame: same aspect, hairline and pixel canvas. */}
       <div
+        ref={frameRef}
         style={{
           position: 'relative',
           width: '100%',
@@ -149,9 +158,9 @@ export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }
           aria-label={label}
           style={{ width: '100%', height: '100%', display: 'block', imageRendering: 'pixelated' }}
         />
-        <SceneLabel at={anchors.away} align="start" text={derby ? `${awayWorld.name}, far side` : awayWorld.name} />
-        <SceneLabel at={anchors.base} text="Training base" align="end" />
-        <SceneLabel at={anchors.ground} text={stadiumWorld.name} />
+        {labels.map((l) => (
+          <SceneLabel key={l.key} name={l.key} text={l.text} at={placed[l.key]} />
+        ))}
       </div>
 
       {/* The ground, in the lore's own words. */}
@@ -170,25 +179,82 @@ export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }
   );
 }
 
-/** A place name laid over the scene, as page text in the label style. */
-function SceneLabel({ at, text, align = 'center' }: { at: { x: number; y: number }; text: string; align?: 'start' | 'center' | 'end' }) {
+/**
+ * A place name over the scene, in the label style, at the spot the layout
+ * found for it (hidden until measured).
+ */
+function SceneLabel({ name, text, at }: { name: string; text: string; at: { x: number; y: number } | undefined }) {
   const style: CSSProperties = {
     ...type.label,
     ...tone.secondary,
     position: 'absolute',
-    left: align === 'start' ? space[4] : `${at.x * 100}%`,
-    top: `${at.y * 100}%`,
-    // A start label hangs from the frame's left edge so a long world name
-    // never runs out of it on a phone.
-    transform: align === 'end' ? 'translateX(-100%)' : align === 'start' ? 'none' : 'translateX(-50%)',
-    // The viewer's overlay treatment (its Replay tag): an Abyss backing so
-    // the label reads over a world.
-    background: color.bg,
-    padding: `0 ${space[4]}`,
+    left: at ? at.x : 0,
+    top: at ? at.y : 0,
+    visibility: at ? 'visible' : 'hidden',
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
   };
-  return <span aria-hidden="true" style={style}>{text}</span>;
+  return (
+    <span data-scene-label={name} aria-hidden="true" style={style}>
+      {text}
+    </span>
+  );
+}
+
+/** Space kept from the frame's edges and between a label and anything else. */
+const LABEL_MARGIN = 12;
+const LABEL_GAP = 8;
+
+/**
+ * Lay the scene labels out in clear sky: measure the frame and each label,
+ * then place them one by one (labelPlacement.ts), each placed label becoming
+ * an obstacle for the next. Re-runs when the frame is resized.
+ */
+function useLabelLayout(
+  frameRef: React.RefObject<HTMLDivElement | null>,
+  labels: ReadonlyArray<{ key: string; text: string; target: Box; order: ReadonlyArray<'above' | 'below' | 'left' | 'right'> }>,
+  geometry: { obstacles: readonly Box[]; horizon: (x: number) => number },
+): Record<string, { x: number; y: number }> {
+  const [placed, setPlaced] = useState<Record<string, { x: number; y: number }>>({});
+  const signature = labels.map((l) => `${l.key}:${l.text}`).join('|');
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return undefined;
+    const layout = () => {
+      const fw = frame.clientWidth, fh = frame.clientHeight;
+      if (!fw || !fh) return;
+      const k = fw / ART.w;
+      const scale = (b: Box): Box => ({ x: b.x * k, y: b.y * k, w: b.w * k, h: b.h * k });
+      const obstacles = geometry.obstacles.map(scale);
+      const next: Record<string, { x: number; y: number }> = {};
+      for (const l of labels) {
+        const el = frame.querySelector<HTMLElement>(`[data-scene-label="${l.key}"]`);
+        if (!el) continue;
+        const size = { w: el.offsetWidth, h: el.offsetHeight };
+        const p = placeLabel({
+          size,
+          target: scale(l.target),
+          order: l.order,
+          frame: { w: fw, h: fh },
+          margin: LABEL_MARGIN,
+          gap: LABEL_GAP,
+          obstacles,
+          horizon: (x) => geometry.horizon(x / k) * k,
+        });
+        next[l.key] = p;
+        obstacles.push({ x: p.x, y: p.y, w: size.w, h: size.h });
+      }
+      setPlaced(next);
+    };
+    layout();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(layout);
+    ro.observe(frame);
+    return () => ro.disconnect();
+    // labels/geometry are rebuilt each render; their content is the signature.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature, geometry]);
+  return placed;
 }
 
 const PHASE_TAG: Record<ReturnType<typeof legState>['phase'], string> = {

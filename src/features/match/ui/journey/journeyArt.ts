@@ -18,7 +18,7 @@
 
 import { TRAINING_MOON, WORLDS, type WorldLook } from '../../../../data/leagueData';
 import type { StadiumStyle } from '../../../../data/stadiums';
-import { deckLift, drawStadium, skyBody } from './stadiumArt';
+import { deckLift, drawStadium, skyBody, stadiumExtent } from './stadiumArt';
 import { canvasColor } from '../../../../shared/design';
 import type { Kit } from '../../logic/viewer';
 import { pixelEllipse, pline, px, resetFill, setGrid } from '../viewer/figure';
@@ -84,14 +84,38 @@ function horizonY(x: number): number {
   return cy - Math.sqrt(Math.max(0, r * r - dx * dx));
 }
 
-/** Label anchors as fractions of the canvas, for page text laid over it. */
-export function labelAnchors(size: WorldLook['size'], style: StadiumStyle = 'cradle') {
-  const below = style === 'subsurface' || style === 'pit' || style === 'underground' || style === 'trench' ? 34 : 24;
-  const w = awayWorld(size);
+/** A box in art pixels. */
+export interface ArtBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * What the scene's labels name and must keep clear of, in art pixels: the
+ * away world, the training base, the ground, and the ships' resting spots.
+ */
+export function sceneGeometry(awayLook: WorldLook, style: StadiumStyle, capacity: number) {
+  const w = awayWorld(awayLook.size);
+  const ringed = awayLook.ring ? 1.95 : awayLook.feature === 'ellipsoid' ? 1.55 : 1;
+  const ext = stadiumExtent(style, capacity);
+  const top = horizonY(GROUND_X) - ext.up;
+  const r = routes(awayLook.size, style);
+  const ship = (p: Pt): ArtBox => ({ x: p.x - 14, y: p.y - 7, w: 28, h: 14 });
+  const sky = skyBody(style);
   return {
-    away: { x: w.cx / ART.w, y: (w.cy + w.r + 6) / ART.h },
-    base: { x: (BASE.cx + BASE.r + 4) / ART.w, y: (BASE.cy + BASE.r + 4) / ART.h },
-    ground: { x: GROUND_X / ART.w, y: (horizonY(GROUND_X) + below) / ART.h },
+    away: { x: w.cx - w.r * ringed, y: w.cy - w.r, w: w.r * ringed * 2, h: w.r * 2 },
+    base: { x: BASE.cx - BASE.r, y: BASE.cy - BASE.r, w: BASE.r * 2, h: BASE.r * 2 },
+    ground: { x: GROUND_X - ext.half, y: top, w: ext.half * 2, h: horizonY(GROUND_X) - top },
+    obstacles: [
+      ship(r.away.dock),
+      ship(r.away.park),
+      ship(r.home.dock),
+      ship(r.home.park),
+      ...(sky ? [{ x: GROUND_X - 34 - 16, y: 92 - 16, w: 32, h: 32 }] : []),
+    ],
+    horizon: horizonY,
   };
 }
 
