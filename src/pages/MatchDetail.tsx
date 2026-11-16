@@ -51,6 +51,7 @@ import {
   getMatchEvents,
   getMatchDurationSeconds,
   DEFAULT_MATCH_DURATION_SECONDS,
+  MatchJourney,
   MatchViewer,
   computeLiveScore,
   competitionLabel,
@@ -850,13 +851,35 @@ function MatchTheatre({
   onRevealed: (view: RevealedView) => void;
 }) {
   const kickoffMs = match.scheduled_at ? new Date(match.scheduled_at).getTime() : null;
-  // eslint-disable-next-line react-hooks/purity -- wall-clock read; a stale value only mis-decides the pitch near the window edge and self-corrects on the next render / nav
-  const nowMs = Date.now();
+  const nowMs = useKickoffClock(kickoffMs);
   const withinPacingWindow =
     kickoffMs != null &&
     nowMs >= kickoffMs &&
     nowMs < kickoffMs + DEFAULT_MATCH_DURATION_SECONDS * 1000;
   const showPitch = isRevealing(match.status) || match.status === 'scheduled' || withinPacingWindow;
+
+  // Before kick-off the team ships are still flying in: show the journey,
+  // not an empty pitch. useKickoffClock re-renders at kick-off, so the page
+  // switches to the pitch on its own.
+  if (match.status === 'scheduled' && kickoffMs != null && nowMs < kickoffMs) {
+    const team = (t: unknown) => {
+      const row = (t ?? {}) as { name?: string; color?: string | null; location?: string | null };
+      return { name: row.name ?? 'TBC', color: row.color ?? null, location: row.location ?? null };
+    };
+    const home = (match.home_team ?? {}) as { home_ground?: string | null; stadium?: { name?: string } | null };
+    return (
+      <>
+        <MatchJourney
+          home={team(match.home_team)}
+          away={team(match.away_team)}
+          kickoffMs={kickoffMs}
+          ground={home.stadium?.name ?? home.home_ground ?? null}
+          seed={String(match.id ?? '')}
+        />
+        <LiveCommentary match={match} onRevealed={onRevealed} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -884,6 +907,26 @@ function MatchTheatre({
       <LiveCommentary match={match} onRevealed={onRevealed} />
     </>
   );
+}
+
+/**
+ * The wall clock as React state, re-read once at kick-off so a page opened
+ * before kick-off swaps the journey for the pitch without a reload.
+ *
+ * @param kickoffMs  Kick-off, epoch ms, or null.
+ * @returns          The current time (updated at kick-off).
+ */
+function useKickoffClock(kickoffMs: number | null): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (kickoffMs == null) return undefined;
+    const wait = kickoffMs - Date.now();
+    if (wait <= 0) return undefined;
+    // setTimeout caps at about 24.8 days; a fixture further out re-checks then.
+    const id = setTimeout(() => setNow(Date.now()), Math.min(wait + 250, 2_000_000_000));
+    return () => clearTimeout(id);
+  }, [kickoffMs, now]);
+  return now;
 }
 
 // ── Wall-clock tick rate ────────────────────────────────────────────────────
