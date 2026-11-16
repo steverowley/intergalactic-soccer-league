@@ -429,42 +429,86 @@ export const TEAMS_BY_LEAGUE: Record<string, Team[]> = {
 // Colours are world data like the club colours above, so they live here.
 
 /** A home world: orbital radius and the colour it is drawn in. */
+/** How a world's surface is drawn on the match-day journey (its real look). */
+export type WorldFeature =
+  | 'rocky' // grey or tinted cratered body (Mercury, Callisto, Eris)
+  | 'clouds' // thick cloud deck in swirled streaks (Venus)
+  | 'earth' // oceans, continents, ice caps, cloud wisps
+  | 'mars' // rust with dark plains and white polar caps
+  | 'asteroid' // lumpy, irregular rubble body
+  | 'station' // an orbital ring station, not a world
+  | 'bands' // a gas giant's cloud belts
+  | 'haze' // a smooth hazy globe (Titan, Uranus)
+  | 'ice' // bright ice crossed by dark cracks (Europa)
+  | 'tiger' // bright ice with blue south-pole stripes (Enceladus)
+  | 'heart' // Pluto's pale Tombaugh heart
+  | 'ellipsoid'; // Haumea's stretched egg shape
+
+/** Real-world appearance for the journey's pixel art. */
+export interface WorldLook {
+  /** Night, day and lit shades of the surface. */
+  shades: readonly [string, string, string];
+  feature: WorldFeature;
+  /** Drawn size class, after the real body's scale. */
+  size: 'giant' | 'planet' | 'moon' | 'minor';
+  /** Continents (Earth), dark plains (Mars). */
+  land?: string;
+  /** Polar caps or a coloured pole (Charon's red cap). */
+  cap?: string;
+  /** A marking: Jupiter's Great Red Spot, Ceres' bright spots, Pluto's heart, Europa's cracks, Enceladus' stripes, Haumea's red spot. */
+  mark?: string;
+  /** Ring colour (Saturn bright, Uranus faint). */
+  ring?: string;
+  /** Lit windows of a station or colony. */
+  lights?: string;
+}
+
 export interface World {
   /** Mean distance from the Sun in astronomical units. */
   au: number;
-  /** Drawn colour of the world. */
+  /** Representative colour of the world. */
   color: string;
   /** Moons and colonies orbit something bigger; drawn smaller. */
   small: boolean;
+  /** How the journey draws it. */
+  look: WorldLook;
 }
 
+/**
+ * The club worlds: orbital distance (for flight times) and each world's real
+ * look (for the match-day journey's pixel art). Colours are the real bodies'
+ * own, kept slightly muted so the club kits stay the strongest colour.
+ */
 export const WORLDS: Record<string, World> = {
-  Mercury: { au: 0.39, color: '#9C8F84', small: false },
-  Venus: { au: 0.72, color: '#E3B96A', small: false },
-  Earth: { au: 1.0, color: '#4A7FC1', small: false },
-  'Largest Orbital Colony': { au: 1.0, color: '#B8C4CC', small: true },
-  Mars: { au: 1.52, color: '#C1440E', small: false },
-  Vesta: { au: 2.36, color: '#A39E93', small: true },
-  Juno: { au: 2.67, color: '#9A938A', small: true },
-  Ceres: { au: 2.77, color: '#8E8A84', small: true },
-  Pallas: { au: 2.77, color: '#A09A90', small: true },
-  'Asteroid Belt Colony': { au: 2.8, color: '#8C8279', small: true },
-  Psyche: { au: 2.92, color: '#B0A48C', small: true },
-  Hygiea: { au: 3.14, color: '#6F6A64', small: true },
-  Jupiter: { au: 5.2, color: '#D3A574', small: false },
-  Europa: { au: 5.2, color: '#C9B99A', small: true },
-  Ganymede: { au: 5.2, color: '#9B8E7E', small: true },
-  Callisto: { au: 5.2, color: '#6E6259', small: true },
-  'Saturn Rings': { au: 9.54, color: '#E2CF98', small: false },
-  Titan: { au: 9.54, color: '#D9A441', small: true },
-  Enceladus: { au: 9.54, color: '#E8EEF2', small: true },
-  Uranus: { au: 19.2, color: '#9FD8DE', small: false },
-  Pluto: { au: 39.5, color: '#CDB89C', small: true },
-  Orcus: { au: 39.4, color: '#7E7D80', small: true },
-  Charon: { au: 39.5, color: '#9A9187', small: true },
-  Haumea: { au: 43.1, color: '#D8D4CC', small: true },
-  Makemake: { au: 45.8, color: '#B66A4E', small: true },
-  'Outer Kuiper Belt': { au: 50, color: '#5E6670', small: true },
-  Eris: { au: 67.8, color: '#D6D2CF', small: true },
-  Sedna: { au: 86, color: '#A33A2B', small: true },
+  Mercury: { au: 0.39, color: '#9C8F84', small: false, look: { shades: ['#4A4541', '#7D756D', '#ADA59B'], feature: 'rocky', size: 'planet' } },
+  Venus: { au: 0.72, color: '#E3B96A', small: false, look: { shades: ['#8C6A33', '#C9A060', '#E8CE95'], feature: 'clouds', size: 'planet' } },
+  Earth: { au: 1.0, color: '#4A7FC1', small: false, look: { shades: ['#1E3F73', '#2F62A8', '#5C8FD0'], feature: 'earth', size: 'planet', land: '#4F7A3A', cap: '#E8EEF2' } },
+  'Largest Orbital Colony': { au: 1.0, color: '#B8C4CC', small: true, look: { shades: ['#4C5560', '#8994A0', '#C7D0D8'], feature: 'station', size: 'moon', lights: '#E8D9A0' } },
+  Mars: { au: 1.52, color: '#C1440E', small: false, look: { shades: ['#6B2A12', '#A8461F', '#D06E3E'], feature: 'mars', size: 'planet', land: '#6E2F1A', cap: '#ECE6DE' } },
+  Vesta: { au: 2.36, color: '#A39E93', small: true, look: { shades: ['#5A554D', '#8A847A', '#B5AFA4'], feature: 'asteroid', size: 'minor' } },
+  Juno: { au: 2.67, color: '#9A938A', small: true, look: { shades: ['#55504A', '#847D74', '#ABA49A'], feature: 'asteroid', size: 'minor' } },
+  Ceres: { au: 2.77, color: '#8E8A84', small: true, look: { shades: ['#48453F', '#6F6B64', '#98938B'], feature: 'rocky', size: 'moon', mark: '#E6E2DA' } },
+  Pallas: { au: 2.77, color: '#A09A90', small: true, look: { shades: ['#5E5850', '#8C857B', '#B3AC9F'], feature: 'asteroid', size: 'minor' } },
+  'Asteroid Belt Colony': { au: 2.8, color: '#8C8279', small: true, look: { shades: ['#4E4740', '#7F756A', '#A99E91'], feature: 'asteroid', size: 'minor', lights: '#E8D9A0' } },
+  Psyche: { au: 2.92, color: '#B0A48C', small: true, look: { shades: ['#5C5446', '#91866E', '#C9BD9F'], feature: 'asteroid', size: 'minor' } },
+  Hygiea: { au: 3.14, color: '#6F6A64', small: true, look: { shades: ['#3A3733', '#5C5853', '#827D76'], feature: 'asteroid', size: 'minor' } },
+  Jupiter: { au: 5.2, color: '#D3A574', small: false, look: { shades: ['#7A5134', '#B98A5E', '#E3C7A0'], feature: 'bands', size: 'giant', mark: '#B2553A' } },
+  Europa: { au: 5.2, color: '#C9B99A', small: true, look: { shades: ['#A89C88', '#CFC6B4', '#EEE8DC'], feature: 'ice', size: 'moon', mark: '#8A5E3E' } },
+  Ganymede: { au: 5.2, color: '#9B8E7E', small: true, look: { shades: ['#4E463D', '#7E7262', '#ADA18E'], feature: 'rocky', size: 'moon', land: '#5E5447' } },
+  Callisto: { au: 5.2, color: '#6E6259', small: true, look: { shades: ['#352F2A', '#574D45', '#7C7168'], feature: 'rocky', size: 'moon', mark: '#CFC8BE' } },
+  'Saturn Rings': { au: 9.54, color: '#E2CF98', small: false, look: { shades: ['#8F7748', '#C9AE73', '#E8D6A4'], feature: 'bands', size: 'giant', ring: '#BCA77A' } },
+  Titan: { au: 9.54, color: '#D9A441', small: true, look: { shades: ['#8A5A1E', '#C08A35', '#E0B060'], feature: 'haze', size: 'moon' } },
+  Enceladus: { au: 9.54, color: '#E8EEF2', small: true, look: { shades: ['#A9B6BF', '#D6E0E6', '#F4F8FA'], feature: 'tiger', size: 'moon', mark: '#6FA6C4' } },
+  Uranus: { au: 19.2, color: '#9FD8DE', small: false, look: { shades: ['#4C8C96', '#7FC0C8', '#B5E4E8'], feature: 'haze', size: 'giant', ring: '#5E8E94' } },
+  Pluto: { au: 39.5, color: '#CDB89C', small: true, look: { shades: ['#6B5340', '#A88D70', '#D8C8B0'], feature: 'heart', size: 'moon', mark: '#EFE6D6' } },
+  Orcus: { au: 39.4, color: '#7E7D80', small: true, look: { shades: ['#3E3D40', '#646367', '#8D8C90'], feature: 'rocky', size: 'moon' } },
+  Charon: { au: 39.5, color: '#9A9187', small: true, look: { shades: ['#4F4A44', '#7F776E', '#ABA298'], feature: 'rocky', size: 'moon', cap: '#7A3E2C' } },
+  Haumea: { au: 43.1, color: '#D8D4CC', small: true, look: { shades: ['#8A8780', '#BDB9B1', '#E6E3DD'], feature: 'ellipsoid', size: 'moon', mark: '#9A4A3C' } },
+  Makemake: { au: 45.8, color: '#B66A4E', small: true, look: { shades: ['#6A3426', '#9C5640', '#C98468'], feature: 'rocky', size: 'moon' } },
+  'Outer Kuiper Belt': { au: 50, color: '#5E6670', small: true, look: { shades: ['#33383E', '#4F565E', '#737B84'], feature: 'asteroid', size: 'minor' } },
+  Eris: { au: 67.8, color: '#D6D2CF', small: true, look: { shades: ['#8E8B88', '#BDBAB6', '#E4E2DF'], feature: 'rocky', size: 'moon' } },
+  Sedna: { au: 86, color: '#A33A2B', small: true, look: { shades: ['#5A1E16', '#8F3426', '#B85A45'], feature: 'rocky', size: 'moon' } },
 };
+
+/** The home club's training base: a small grey moon near the stadium world. */
+export const TRAINING_MOON: WorldLook = { shades: ['#4A4743', '#7A766F', '#A8A49C'], feature: 'rocky', size: 'minor' };

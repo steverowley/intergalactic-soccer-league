@@ -69,8 +69,7 @@ export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourn
   const stadiumWorld = worldOf(home.location);
   const awayWorld = worldOf(away.location);
   const derby = stadiumWorld.name === awayWorld.name;
-  const awaySmall = awayWorld.small;
-  const anchors = labelAnchors(awaySmall);
+  const anchors = labelAnchors(awayWorld.look.size);
 
   const awayState = legState(journey.away, now);
   const homeState = legState(journey.home, now);
@@ -85,7 +84,8 @@ export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourn
         away: { kit: kits.away.outfield, ...awayState },
         home: { kit: kits.home.outfield, ...homeState },
         homeKit: kits.home.outfield,
-        awaySmall,
+        awayLook: awayWorld.look,
+        homeLook: stadiumWorld.look,
         stars,
         t,
       });
@@ -106,7 +106,7 @@ export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourn
     return () => cancelAnimationFrame(raf);
     // The states are re-derived each second; their fields are the real inputs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kits, awayState.phase, awayState.progress, homeState.phase, homeState.progress, awaySmall, stars, reducedMotion]);
+  }, [kits, awayState.phase, awayState.progress, homeState.phase, homeState.progress, awayWorld.look, stadiumWorld.look, stars, reducedMotion]);
 
   const label = `${away.name}: ${legStatus(journey.away, now, clock)}. ${home.name}: ${legStatus(journey.home, now, clock)}.`;
 
