@@ -1,0 +1,13 @@
+SAVES (#739, part of #708): MEASURED REPORT
+branch fix/engine-saves. BEFORE = origin/main 4e5cd6e (engine identical to 345c875).
+
+Standard batch = equal 4-4-2 sides rated 60 to 80, seeds 1000+ (scripts/run-batch.sh std,
+scripts/batch-report.ts). Shot diagnostics from scripts/saves-diag.ts (one row per shot, read
+from the live world at the strike; run with scripts/run-saves-diag.sh <prefix> <n>).
+
+== 1. BASELINE (main, 240 matches)
+goals 2.33 (SE 0.10), shots 18.85 (0.30), on target share 0.315, saves 3.83 (0.13),
+draw share 0.425 (0.032). Target bands: goals 2.4-3.0, shots 20-28, saves 5-8, draws 0.17-0.33.
+
+== 2. WHAT WAS HAPPENING ON THE PITCH (120 matches, 2,170 shots)
+(work in progress: filled in as the fix lands)
