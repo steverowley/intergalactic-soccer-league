@@ -45,7 +45,8 @@ describe('starfield', () => {
     expect(starfield('m1', 5)).not.toEqual(starfield('m2', 5));
     for (const s of starfield('x', 50)) {
       expect(s.x).toBeGreaterThanOrEqual(0);
-      expect(s.x).toBeLessThan(1);
+      expect(s.x).toBeLessThan(320);
+      expect(s.y).toBeLessThan(208);
     }
   });
 });
