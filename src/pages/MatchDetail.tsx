@@ -863,8 +863,8 @@ function MatchTheatre({
   // switches to the pitch on its own.
   if (match.status === 'scheduled' && kickoffMs != null && nowMs < kickoffMs) {
     const team = (t: unknown) => {
-      const row = (t ?? {}) as { name?: string; color?: string | null; location?: string | null };
-      return { name: row.name ?? 'TBC', color: row.color ?? null, location: row.location ?? null };
+      const row = (t ?? {}) as { id?: string; name?: string; color?: string | null; location?: string | null };
+      return { id: row.id ?? null, name: row.name ?? 'TBC', color: row.color ?? null, location: row.location ?? null };
     };
     const home = (match.home_team ?? {}) as { home_ground?: string | null; stadium?: { name?: string } | null };
     return (

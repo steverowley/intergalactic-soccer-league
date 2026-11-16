@@ -26,7 +26,7 @@
 // export is missing from the shelf, so the page cannot go stale.
 
 import { useState } from 'react';
-import { MatchJourney, WorldGallery } from '@features/match';
+import { GroundGallery, MatchJourney, WorldGallery } from '@features/match';
 import { usePageTitle } from '../shared/hooks/usePageTitle';
 import StandingsTable from '../components/StandingsTable';
 import { canvasColor, color, space, tone, type } from '../shared/design';
@@ -305,15 +305,18 @@ export default function Components() {
             <ScoreBug home="–" away="–" />
           </Row>
         </Entry>
-        <Entry name="MatchJourney" purpose="Before kick-off the team ships fly to the stadium on a real timetable, in the match viewer's pixel style. Each world is drawn as its real body.">
+        <Entry name="MatchJourney" purpose="Before kick-off the team ships fly to the stadium on a real timetable, in the match viewer's pixel style. Each world is drawn as its real body, and each club's ground after its lore.">
           <div style={{ width: '100%' }}>
             <MatchJourney
-              home={{ name: 'Earth United', color: canvasColor.kitAway, location: 'Earth' }}
+              home={{ id: 'earth-united', name: 'Earth United', color: canvasColor.kitAway, location: 'Earth' }}
               away={{ name: 'Saturn Rings FC', color: canvasColor.kitHome, location: 'Saturn Rings' }}
               kickoffMs={JOURNEY_KICKOFF}
               ground="Blue Marble Arena"
               seed="shelf"
             />
+          </div>
+          <div style={{ width: '100%' }}>
+            <GroundGallery />
           </div>
           <div style={{ width: '100%' }}>
             <WorldGallery />
