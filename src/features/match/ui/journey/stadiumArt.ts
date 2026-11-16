@@ -50,6 +50,34 @@ export function deckLift(style: StadiumStyle): number {
   }
 }
 
+/**
+ * How much room a ground takes round its centre column (art pixels): `up`
+ * above the surface (masts, domes, decks, mountains), `half` either side
+ * (earthwork shoulders, gantries, geysers, headframes). For keeping labels
+ * clear of it.
+ */
+export function stadiumExtent(style: StadiumStyle, capacity: number): { up: number; half: number } {
+  const hw = halfWidth(capacity);
+  const up: Partial<Record<StadiumStyle, number>> = {
+    peak: deckLift('peak') + 22,
+    storm: deckLift('storm') + 24,
+    tilted: deckLift('tilted') + 14,
+    colosseum: deckLift('colosseum') + 22,
+    drifter: deckLift('drifter') + 14,
+    ring: Math.round(hw * 1.4) + 14,
+    outpost: 44,
+    mine: 34,
+    scatter: 38,
+    geyser: 32,
+    grand: 36,
+    subsurface: 8,
+    trench: 18,
+    pit: 6,
+    underground: 24,
+  };
+  return { up: up[style] ?? 30, half: hw + 18 };
+}
+
 /** A world drawn in the sky over the ground (Charon's view of Pluto). */
 export function skyBody(style: StadiumStyle): string | null {
   return style === 'lagrange' ? 'Pluto' : null;
@@ -72,8 +100,8 @@ const SHOULDER = 16;
  * The earthwork the ground is built into: a plateau at `top` under the
  * stand, easing down to the world's surface over long shoulders either side,
  * in the world's own shades (lit crest, day face, dithered into night). It
- * reads as terrain, not a slab, so the stand sits in the world rather than
- * on top of it.
+ * reads as terrain, not a slab: the stand rests on it, whole, with nothing
+ * drawn over it.
  */
 function groundUnder(s: StadiumScene, x0: number, x1: number, top: number) {
   const [night, day, lit] = s.world.shades;
@@ -89,25 +117,6 @@ function groundUnder(s: StadiumScene, x0: number, x1: number, top: number) {
     for (let k = y + 3; k < surface + 3; k++) if ((x + k) % 2 === 0) px(s.ctx, x, k, 1, 1, night);
   }
 }
-
-/**
- * The near lip of the earthwork, drawn over the foot of the stand so it sits
- * down in the ground: a lit crest with the day face below, down to the
- * surface.
- */
-function frontLip(s: StadiumScene, x0: number, x1: number, top: number) {
-  const [night, day, lit] = s.world.shades;
-  for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) {
-    const surface = Math.round(s.surf(x)) + 3;
-    if (surface <= top) continue;
-    px(s.ctx, x, top, 1, surface - top, day);
-    px(s.ctx, x, top, 1, 1, lit);
-    for (let k = top + 2; k < surface; k++) if ((x + k) % 2 === 0) px(s.ctx, x, k, 1, 1, night);
-  }
-}
-
-/** Grounds built on the surface, which get the earthwork's front lip. */
-const SET_IN: readonly StadiumStyle[] = ['grand', 'dome', 'dustbowl', 'crater', 'geyser', 'hub', 'lagrange', 'cradle', 'oval', 'heatbox', 'den', 'forge', 'greenhouse', 'icebox', 'outpost', 'park', 'scatter', 'haze', 'temple'];
 
 /** A bowl: tiers of stand in the kit round a lit pitch. */
 function bowl(s: StadiumScene, x: number, y: number, hw: number, tiers = 2, hhScale = 1) {
@@ -644,9 +653,4 @@ export function drawStadium(s: StadiumScene, style: StadiumStyle): void {
     }
   }
 
-  // Sit it in the ground: the earthwork's near lip over the foot of the stand.
-  if (SET_IN.includes(style)) {
-    const span = style === 'dustbowl' || style === 'oval' ? hw + 6 : hw + 2;
-    frontLip(s, gx - span, gx + span, y0 - 3);
-  }
 }
