@@ -65,13 +65,49 @@ const on = (t: number, period: number, phase = 0) => t === 0 || Math.floor(t / p
 
 // ── Shared pieces ───────────────────────────────────────────────────────────
 
-/** Ground built up from `top` to the surface on every column, so nothing floats. */
+/** How far the earthwork's shoulders run out either side of the stand. */
+const SHOULDER = 16;
+
+/**
+ * The earthwork the ground is built into: a plateau at `top` under the
+ * stand, easing down to the world's surface over long shoulders either side,
+ * in the world's own shades (lit crest, day face, dithered into night). It
+ * reads as terrain, not a slab, so the stand sits in the world rather than
+ * on top of it.
+ */
 function groundUnder(s: StadiumScene, x0: number, x1: number, top: number) {
-  for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) {
-    const h = Math.round(s.surf(x)) - top + 1;
-    if (h > 0) px(s.ctx, x, top, 1, h, s.world.shades[0]);
+  const [night, day, lit] = s.world.shades;
+  for (let x = Math.floor(x0 - SHOULDER); x <= Math.ceil(x1 + SHOULDER); x++) {
+    const out = x < x0 ? (x0 - x) / SHOULDER : x > x1 ? (x - x1) / SHOULDER : 0;
+    const ease = out * out * (3 - 2 * out);
+    const surface = Math.round(s.surf(x));
+    const y = Math.round(top + (surface - top) * ease);
+    const h = surface - y + 3;
+    if (h <= 0) continue;
+    px(s.ctx, x, y, 1, h, day);
+    px(s.ctx, x, y, 1, 1, lit);
+    for (let k = y + 3; k < surface + 3; k++) if ((x + k) % 2 === 0) px(s.ctx, x, k, 1, 1, night);
   }
 }
+
+/**
+ * The near lip of the earthwork, drawn over the foot of the stand so it sits
+ * down in the ground: a lit crest with the day face below, down to the
+ * surface.
+ */
+function frontLip(s: StadiumScene, x0: number, x1: number, top: number) {
+  const [night, day, lit] = s.world.shades;
+  for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) {
+    const surface = Math.round(s.surf(x)) + 3;
+    if (surface <= top) continue;
+    px(s.ctx, x, top, 1, surface - top, day);
+    px(s.ctx, x, top, 1, 1, lit);
+    for (let k = top + 2; k < surface; k++) if ((x + k) % 2 === 0) px(s.ctx, x, k, 1, 1, night);
+  }
+}
+
+/** Grounds built on the surface, which get the earthwork's front lip. */
+const SET_IN: readonly StadiumStyle[] = ['grand', 'dome', 'dustbowl', 'crater', 'geyser', 'hub', 'lagrange', 'cradle', 'oval', 'heatbox', 'den', 'forge', 'greenhouse', 'icebox', 'outpost', 'park', 'scatter', 'haze', 'temple'];
 
 /** A bowl: tiers of stand in the kit round a lit pitch. */
 function bowl(s: StadiumScene, x: number, y: number, hw: number, tiers = 2, hhScale = 1) {
@@ -606,5 +642,11 @@ export function drawStadium(s: StadiumScene, style: StadiumStyle): void {
       px(ctx, gx - hw + 6, dy - 2, hw * 2 - 12, 2, C.text);
       break;
     }
+  }
+
+  // Sit it in the ground: the earthwork's near lip over the foot of the stand.
+  if (SET_IN.includes(style)) {
+    const span = style === 'dustbowl' || style === 'oval' ? hw + 6 : hw + 2;
+    frontLip(s, gx - span, gx + span, y0 - 3);
   }
 }
