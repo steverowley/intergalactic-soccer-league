@@ -31,7 +31,7 @@ const GOAL_HALF = 7.32 / 2;
 const MID_Y = 68 / 2;
 
 interface ShotRow {
-  seed: number; t: number; restart: string; header: boolean; role: string;
+  seed: number; t: number; restart: string; header: boolean; placed: boolean; role: string;
   dist: number; ang: number; pressure: number; est: number; pF: number; pB: number; pCl: number;
   onT: boolean; laneD: number; laneBlk: number; kAtStrike: number;
   kDepth: number; kOff: number; kVy: number; kSpeed: number; kGoalSide: number;
@@ -117,7 +117,7 @@ function run(): void {
         const vx = w.ball.vel.x, vy = w.ball.vel.y;
         const crossY = Math.abs(vx) > 1e-6 ? by + vy * ((gx - bx) / vx) : by;
         cur = {
-          seed, t: r.tSec, restart: String(r.data['restart'] ?? 'open'), header: r.data['header'] === true, role: shooter.role,
+          seed, t: r.tSec, restart: String(r.data['restart'] ?? 'open'), header: r.data['header'] === true, placed: r.data['placed'] === true, role: shooter.role,
           dist: d, ang, pressure: Number(r.data['pressure'] ?? 0), est: Number(r.data['est']),
           pF: Number(r.data['pF']), pB: Number(r.data['pB']), pCl: Number(r.data['pCl']),
           onT: r.data['onTarget'] === true, laneD: Number(r.data['laneD'] ?? 99), laneBlk: Number(r.data['laneBlk'] ?? 0),
@@ -287,6 +287,16 @@ function report(): void {
     const miss = unb.filter((r) => r.out === 'miss' || r.out === 'woodwork' || r.out === 'kOffT');
     const over = miss.filter((r) => r.missZ > 2.2).length;
     console.log(`${hdr ? 'head' : 'foot'} ${name.padEnd(6)} ${(b.length / M).toFixed(2)}/m block ${pct(b.length - unb.length, b.length)} | onT ${pct(on.length, unb.length)} miss ${pct(miss.length, unb.length)} (over ${pct(over, miss.length)}) | saves ${((on.length - gl.length) / M).toFixed(2)} goals ${(gl.length / M).toFixed(2)} | pCl ${mean(b.map((r) => r.pCl)).toFixed(2)} v ${(unb.length / b.length).toFixed(2)}, pF ${mean(b.map((r) => r.pF)).toFixed(2)} v ${(b.filter((r) => r.onT).length / b.length).toFixed(2)}, pB ${mean(on.map((r) => r.pB)).toFixed(2)} v ${(gl.length / Math.max(1, on.length)).toFixed(2)}, est ${mean(b.map((r) => r.est)).toFixed(3)} v ${(gl.length / b.length).toFixed(3)}`);
+  }
+  // Driven against placed (side-foot) foot shots in open play, by band.
+  console.log('\nfoot shots, drive v placed (open play): n/m, blocked, unblocked on target, goal per shot, saves/m');
+  for (const [name, f] of bands) for (const pl of [false, true]) {
+    const b = rows.filter((r) => f(r) && !r.header && r.restart === 'open' && r.placed === pl);
+    if (!b.length) continue;
+    const unb = b.filter((r) => r.out !== 'block');
+    const on = unb.filter(isOn);
+    const gl = on.filter((r) => r.out === 'goal');
+    console.log(`${name.padEnd(6)} ${pl ? 'placed' : 'drive '} ${(b.length / M).toFixed(2)}/m block ${pct(b.length - unb.length, b.length)} onT ${pct(on.length, unb.length)} goal ${pct(gl.length, b.length)} saves ${((on.length - gl.length) / M).toFixed(2)}/m`);
   }
   const sp = rows.filter((r) => r.restart !== 'open');
   console.log(`set-piece shots ${(sp.length / M).toFixed(2)}/m ${JSON.stringify(tallyBy(sp.map((r) => r.restart)))}`);
