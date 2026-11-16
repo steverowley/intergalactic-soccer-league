@@ -26,9 +26,10 @@
 // export is missing from the shelf, so the page cannot go stale.
 
 import { useState } from 'react';
+import { MatchJourney, WorldGallery } from '@features/match';
 import { usePageTitle } from '../shared/hooks/usePageTitle';
 import StandingsTable from '../components/StandingsTable';
-import { color, space, tone, type } from '../shared/design';
+import { canvasColor, color, space, tone, type } from '../shared/design';
 import {
   BackLink,
   Breadcrumbs,
@@ -68,6 +69,9 @@ import {
 } from '../shared/ui';
 
 // ── Local showcase chrome ───────────────────────────────────────────────────
+/** The shelf's journey: kick-off in two hours, so the away ship is mid-flight. */
+const JOURNEY_KICKOFF = Date.now() + 2 * 60 * 60 * 1000;
+
 // Not exported: this page's own layout, built from tokens like any page.
 
 /** One component's entry: name, one-line purpose, a live example. */
@@ -300,6 +304,20 @@ export default function Components() {
             <ScoreBug home={2} away={1} />
             <ScoreBug home="–" away="–" />
           </Row>
+        </Entry>
+        <Entry name="MatchJourney" purpose="Before kick-off the team ships fly to the stadium on a real timetable, in the match viewer's pixel style. Each world is drawn as its real body.">
+          <div style={{ width: '100%' }}>
+            <MatchJourney
+              home={{ name: 'Earth United', color: canvasColor.kitAway, location: 'Earth' }}
+              away={{ name: 'Saturn Rings FC', color: canvasColor.kitHome, location: 'Saturn Rings' }}
+              kickoffMs={JOURNEY_KICKOFF}
+              ground="Blue Marble Arena"
+              seed="shelf"
+            />
+          </div>
+          <div style={{ width: '100%' }}>
+            <WorldGallery />
+          </div>
         </Entry>
         <Entry name="Tag" purpose="Hairline label for categories, filters and statuses. selected flips the fill.">
           <Row label="Tones">

@@ -2,14 +2,21 @@
 //
 // The match-day journey drawn the way the match viewer draws the pitch
 // (docs/match-viewer.md): one coarse pixel grid on a 320 x 208 art canvas,
-// the viewer's own primitives (figure.ts), Galactic Abyss and Lunar Dust
-// shades only, and the club kit colour as the one strong colour. Worlds are
-// Lunar Dust with a dithered night side; the team ships are little pixel
-// buses in their club's kit, with the squad's heads in the windows.
+// the viewer's own primitives (figure.ts), on the Galactic Abyss.
 //
-// Pure drawing: everything comes in through `JourneyFrame`, so the panel
-// owns the clock and the loop.
+// Each world is drawn as its real body (owner, 2026-11-16: "realistic to our
+// solar system"): Jupiter's belts and Great Red Spot, Saturn's and Uranus'
+// rings, Earth's oceans, continents and caps, Mars' rust and polar caps,
+// Europa's cracked ice, Titan's haze, Enceladus' tiger stripes, Pluto's
+// heart, lumpy asteroids, an orbital ring station. Sizes follow the real
+// scale class (giant, planet, moon, minor body). The looks live in
+// data/leagueData.ts (world data). The team ships are pixel buses in their
+// club's match kit; the stadium is a stand in the home kit on the surface.
+//
+// The worlds are static, so they are drawn once into an offscreen layer per
+// fixture; each animation frame copies that and adds the moving parts.
 
+import { TRAINING_MOON, type WorldLook } from '../../../../data/leagueData';
 import { canvasColor } from '../../../../shared/design';
 import type { Kit } from '../../logic/viewer';
 import { pixelEllipse, pline, px, resetFill, setGrid } from '../viewer/figure';
@@ -30,10 +37,11 @@ export interface ShipFrame {
 export interface JourneyFrame {
   away: ShipFrame;
   home: ShipFrame;
-  /** The home club's kit, for the stadium bowl. */
+  /** The home club's kit, for the stadium stand. */
   homeKit: Kit;
-  /** The away world is a moon or colony: drawn smaller. */
-  awaySmall: boolean;
+  /** The away club's world and the stadium (home) world. */
+  awayLook: WorldLook;
+  homeLook: WorldLook;
   /** Fixed stars for this fixture, in art pixels. */
   stars: ReadonlyArray<{ x: number; y: number; o: number }>;
   /** Animation time, ms (0 under reduced motion). */
@@ -46,12 +54,19 @@ export interface JourneyFrame {
 const STADIUM_WORLD = { cx: 266, cy: 292, r: 132 };
 /** The home club's training base: a small moon top right. */
 const BASE = { cx: 286, cy: 40, r: 7 };
-/** Where the ground sits on the stadium world's horizon. */
-const GROUND_X = 228;
+/**
+ * Where the ground sits: near the top of the stadium world, where the
+ * horizon is flattest, so the whole stand sits on the surface.
+ */
+const GROUND_X = 256;
+
+/** Drawn radius per size class, after the real bodies' scale. */
+const SIZE_R: Record<WorldLook['size'], number> = { giant: 26, planet: 19, moon: 13, minor: 10 };
 
 /** The away world, low left. */
-export function awayWorld(small: boolean) {
-  return { cx: 46, cy: 150, r: small ? 13 : 21 };
+export function awayWorld(size: WorldLook['size']) {
+  const r = SIZE_R[size];
+  return { cx: 52, cy: 146, r };
 }
 
 /** Surface height of the stadium world at column x. */
@@ -62,12 +77,12 @@ function horizonY(x: number): number {
 }
 
 /** Label anchors as fractions of the canvas, for page text laid over it. */
-export function labelAnchors(small: boolean) {
-  const w = awayWorld(small);
+export function labelAnchors(size: WorldLook['size']) {
+  const w = awayWorld(size);
   return {
     away: { x: w.cx / ART.w, y: (w.cy + w.r + 6) / ART.h },
     base: { x: (BASE.cx + BASE.r + 4) / ART.w, y: (BASE.cy + BASE.r + 4) / ART.h },
-    ground: { x: GROUND_X / ART.w, y: (horizonY(GROUND_X) + 10) / ART.h },
+    ground: { x: GROUND_X / ART.w, y: (horizonY(GROUND_X) + 24) / ART.h },
   };
 }
 
@@ -83,17 +98,235 @@ function quad(a: Pt, c: Pt, b: Pt) {
 }
 
 /** The two routes and the ships' rest points (sprite centres). */
-function routes(small: boolean) {
-  const w = awayWorld(small);
+function routes(size: WorldLook['size']) {
+  const w = awayWorld(size);
   const gy = horizonY(GROUND_X);
-  const awayDock = { x: w.cx + w.r + 16, y: w.cy - 4 };
-  const awayPark = { x: GROUND_X - 44, y: horizonY(GROUND_X - 44) - 6 };
+  const awayDock = { x: w.cx + w.r * 1.3 + 16, y: w.cy - 4 };
+  const awayPark = { x: GROUND_X - 46, y: horizonY(GROUND_X - 46) - 6 };
   const homeDock = { x: BASE.cx - 22, y: BASE.cy + 2 };
-  const homePark = { x: GROUND_X + 46, y: horizonY(GROUND_X + 46) - 6 };
+  const homePark = { x: GROUND_X + 44, y: horizonY(GROUND_X + 44) - 6 };
   return {
-    away: { at: quad(awayDock, { x: 130, y: 6 }, awayPark), dock: awayDock, park: awayPark },
-    home: { at: quad(homeDock, { x: GROUND_X + 70, y: gy - 50 }, homePark), dock: homeDock, park: homePark },
+    away: { at: quad(awayDock, { x: 140, y: 6 }, awayPark), dock: awayDock, park: awayPark },
+    home: { at: quad(homeDock, { x: GROUND_X + 56, y: gy - 50 }, homePark), dock: homeDock, park: homePark },
   };
+}
+
+// ── Noise ───────────────────────────────────────────────────────────────────
+
+/** Smooth value noise in [0, 1) on a seeded lattice. */
+function noise(x: number, y: number, seed: number): number {
+  const h = (i: number, j: number) => {
+    let n = Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ Math.imul(seed, 2246822519);
+    n = Math.imul(n ^ (n >>> 13), 1274126177);
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+  };
+  const xi = Math.floor(x), yi = Math.floor(y);
+  const fx = x - xi, fy = y - yi;
+  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+  const a = h(xi, yi), b = h(xi + 1, yi), c = h(xi, yi + 1), d = h(xi + 1, yi + 1);
+  return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+}
+
+// ── Worlds ──────────────────────────────────────────────────────────────────
+
+/**
+ * A world as its real body: a lit disc (upper-left sun) in its three shades
+ * with a dithered terminator, then its surface feature.
+ *
+ * @param dim  Darkens the lighting (the near stadium world, so the stand is
+ *             the brightest thing on it).
+ */
+function drawBody(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, look: WorldLook, seed: number, dim = 0) {
+  if (look.feature === 'station') return drawStation(ctx, cx, cy, r, look);
+  const [night, day, lit] = look.shades;
+  const f = look.feature;
+  const stretch = f === 'ellipsoid' ? 1.55 : 1;
+  const xr = r * stretch;
+
+  if (look.ring && r < 60) ringPixels(ctx, cx, cy, r, look.ring, 'back');
+
+  for (let y = Math.floor(cy - r - 2); y <= Math.ceil(cy + r + 2); y++) {
+    if (y < 0 || y >= ART.h) continue;
+    for (let x = Math.floor(cx - xr - 2); x <= Math.ceil(cx + xr + 2); x++) {
+      if (x < 0 || x >= ART.w) continue;
+      const dx = (x + 0.5 - cx) / xr;
+      const dy = (y + 0.5 - cy) / r;
+      let edge = 1;
+      if (f === 'asteroid') {
+        // A lumpy outline: the radius wanders with the angle.
+        const a = Math.atan2(dy, dx);
+        edge = 0.78 + 0.3 * noise(Math.cos(a) * 1.6 + 5, Math.sin(a) * 1.6 + 5, seed);
+      }
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= edge * edge) continue;
+      const dz = Math.sqrt(Math.max(0, 1 - d2 / (edge * edge)));
+      const light = -0.55 * dx - 0.65 * dy + 0.5 * dz - dim;
+      const even = (x + y) % 2 === 0;
+      // 0 night, 1 day, 2 lit; the two bands between are dithered.
+      let tone = light > 0.8 ? 2 : light > 0.7 ? (even ? 2 : 1) : light > 0.3 ? 1 : light > 0.14 ? (even ? 1 : 0) : 0;
+      let col = tone === 2 ? lit : tone === 1 ? day : night;
+      // Surface detail scales with the drawn size, so the near world's
+      // horizon has continents and cloud the size of the small worlds', not
+      // a few giant blobs. Seen from its surface, it shows no polar cap.
+      const detail = 3 * Math.max(1, r / 22);
+      const sx = dx * detail, sy = dy * detail;
+      const near = r > 60;
+
+      switch (f) {
+        case 'earth': {
+          const land = noise(sx + 1.3, sy * 1.2, seed) > 0.56;
+          if (land && tone > 0) col = look.land!;
+          if (!near && Math.abs(dy) > 0.84 && tone > 0) col = look.cap!;
+          else if (noise(sx * 2.2, sy * 5, seed + 9) > 0.78 && tone > 0) col = look.cap!;
+          break;
+        }
+        case 'mars':
+          if (noise(sx + 4, sy + 2, seed) > 0.62 && tone > 0) col = look.land!;
+          if (!near && Math.abs(dy) > 0.82 && tone > 0) col = look.cap!;
+          break;
+        case 'bands': {
+          // Belts across the globe, wobbling a little.
+          const band = Math.floor((dy + 1) * 5.5 * (near ? r / 22 : 1) + 0.6 * noise(sx * 2, dy * 2, seed)) % 2;
+          if (band === 1 && tone > 0) tone -= 1;
+          col = tone === 2 ? lit : tone === 1 ? day : night;
+          if (look.mark) {
+            const ex = (dx - 0.28) / 0.24, ey = (dy - 0.36) / 0.12;
+            if (ex * ex + ey * ey < 1 && light > 0.05) col = look.mark;
+          }
+          break;
+        }
+        case 'clouds': {
+          const streak = noise(sx * 0.8, sy * 4 + dx * 2, seed) > 0.55;
+          if (streak && tone < 2 && light > 0.2) col = tone === 1 ? lit : day;
+          break;
+        }
+        case 'haze':
+          // Smooth: no surface detail, a bright limb on the day side.
+          if (d2 > 0.86 && light > 0.2) col = lit;
+          break;
+        case 'ice': {
+          const crack = Math.abs(Math.sin(dx * 7 + noise(sx, sy, seed) * 4)) < 0.1 || Math.abs(Math.sin(dy * 6 - dx * 3 + noise(sx + 3, sy, seed) * 3)) < 0.08;
+          if (crack && tone > 0) col = look.mark!;
+          break;
+        }
+        case 'tiger':
+          // The stripes vent from the south pole, visible even on its night side.
+          if (dy > 0.3 && Math.abs(Math.sin(dx * 9 + dy * 3)) < 0.25) col = look.mark!;
+          break;
+        case 'heart': {
+          // Tombaugh Regio: two lobes over a point, low on the lit side.
+          const hx = dx + 0.05, hy = dy - 0.12;
+          const lobe = (ox: number) => (hx - ox) ** 2 + (hy + 0.12) ** 2 < 0.075;
+          const point = hy > -0.12 && hy < 0.42 && Math.abs(hx) < 0.36 - hy * 0.85;
+          if ((lobe(-0.17) || lobe(0.17) || point) && tone > 0) col = look.mark!;
+          break;
+        }
+        case 'ellipsoid':
+          if (look.mark && (dx - 0.2) ** 2 + (dy + 0.1) ** 2 < 0.03 && tone > 0) col = look.mark;
+          break;
+        case 'rocky':
+          if (look.land && noise(sx + 7, sy + 7, seed) > 0.6 && tone > 0) col = look.land;
+          if (!near && look.cap && dy < -0.7) col = tone > 0 ? look.cap : night;
+          break;
+        default:
+          break;
+      }
+      px(ctx, x, y, 1, 1, col);
+    }
+  }
+
+  // Craters on rocky bodies; bright spots where the body has them.
+  if (f === 'rocky' || f === 'asteroid') {
+    let h = seed * 9973 + 17;
+    const rnd = () => (h = (h * 16807) % 2147483647) / 2147483647;
+    const n = Math.max(2, Math.round(r / 4));
+    for (let i = 0; i < n; i++) {
+      const a = rnd() * Math.PI * 2, d = rnd() * r * 0.6;
+      const x = Math.round(cx + Math.cos(a) * d), y = Math.round(cy + Math.sin(a) * d);
+      if (y >= ART.h) continue;
+      px(ctx, x, y, 2, 1, night);
+      px(ctx, x, y - 1, 2, 1, lit);
+    }
+    if (look.mark) {
+      px(ctx, Math.round(cx - r * 0.25), Math.round(cy - r * 0.1), 1, 1, look.mark);
+      px(ctx, Math.round(cx + r * 0.05), Math.round(cy - r * 0.35), 2, 1, look.mark);
+    }
+  }
+  // A colony on a rock: lights on its night side.
+  if (look.lights) {
+    for (const [ox, oy] of [[0.3, 0.25], [0.1, 0.45], [0.45, 0.05]] as const) {
+      px(ctx, Math.round(cx + ox * r), Math.round(cy + oy * r), 1, 1, look.lights);
+    }
+  }
+
+  if (look.ring && r < 60) ringPixels(ctx, cx, cy, r, look.ring, 'front');
+}
+
+/**
+ * A planetary ring, tilted: the half behind the globe is drawn first, the
+ * half in front after it.
+ */
+function ringPixels(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, col: string, half: 'back' | 'front') {
+  const rx0 = r * 1.35, rx1 = r * 1.95, k = 0.3;
+  for (let y = Math.floor(cy - rx1 * k); y <= Math.ceil(cy + rx1 * k); y++) {
+    const front = y + 0.5 >= cy;
+    if ((half === 'front') !== front) continue;
+    for (let x = Math.floor(cx - rx1); x <= Math.ceil(cx + rx1); x++) {
+      const dx = x + 0.5 - cx, dy = (y + 0.5 - cy) / k;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < rx0 || d > rx1) continue;
+      // A Cassini-style gap two thirds of the way out.
+      if (Math.abs(d - (rx0 + (rx1 - rx0) * 0.62)) < 0.7) continue;
+      px(ctx, x, y, 1, 1, col);
+    }
+  }
+}
+
+/** The orbital colony: a ring station with spokes, a hub and lit windows. */
+function drawStation(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, look: WorldLook) {
+  const [night, day, lit] = look.shades;
+  const ry = r * 0.45;
+  pixelEllipse(ctx, cx, cy, r, ry, night);
+  pixelEllipse(ctx, cx, cy - 1, r, ry, day);
+  pixelEllipse(ctx, cx, cy - 1, r - 3, ry - 3, canvasColor.bg);
+  pline(ctx, cx - r + 2, cy - 1, cx + r - 2, cy - 1, day);
+  pline(ctx, cx, cy - ry + 1, cx, cy + ry - 2, day);
+  pixelEllipse(ctx, cx, cy - 1, 3, 2, lit);
+  if (look.lights) {
+    for (const ox of [-0.8, -0.45, 0.45, 0.8]) px(ctx, Math.round(cx + ox * r), Math.round(cy + (Math.abs(ox) > 0.6 ? 0 : ry - 2)), 1, 1, look.lights);
+  }
+}
+
+/**
+ * The stadium world's own rings seen from its surface: an arch across the
+ * sky behind the horizon (Saturn, Uranus).
+ */
+function skyRing(ctx: CanvasRenderingContext2D, col: string) {
+  const { cx, cy, r } = STADIUM_WORLD;
+  for (let i = 0; i < 3; i++) {
+    const rx = r * 1.25 + i * 2, ry = r * 0.82 + i * 2;
+    for (let x = 0; x < ART.w; x++) {
+      const dx = (x + 0.5 - cx) / rx;
+      if (Math.abs(dx) >= 1) continue;
+      const y = Math.round(cy - ry * Math.sqrt(1 - dx * dx));
+      if (y < horizonY(x) && i !== 1) px(ctx, x, y, 1, 1, col);
+    }
+  }
+}
+
+/** Size of one gallery tile, art pixels. */
+export const TILE = 64;
+
+/**
+ * One world on its own in a TILE-square canvas, for the shelf's gallery:
+ * the same drawing as the journey, at the world's size class.
+ */
+export function drawWorldTile(ctx: CanvasRenderingContext2D, look: WorldLook, seed: number): void {
+  setGrid(PIXEL_SCALE);
+  resetFill();
+  px(ctx, 0, 0, TILE, TILE, canvasColor.bg);
+  // A ringed giant shrinks to fit its rings in the tile.
+  drawBody(ctx, TILE / 2, TILE / 2, look.ring ? 15 : SIZE_R[look.size], look, seed);
 }
 
 // ── Sprites ─────────────────────────────────────────────────────────────────
@@ -132,11 +365,10 @@ function drawShip(ctx: CanvasRenderingContext2D, cx: number, cy: number, kit: Ki
     d: canvasColor.figureDark,
     s: canvasColor.figureMid,
   };
-  // Shadow under a ship standing on the ground.
   if (!flying) px(ctx, x0 + 1, y0 + SHIP_H, SHIP_W - 2, 1, canvasColor.shadow);
   for (let r = 0; r < SHIP_H; r++) {
     const row = SHIP[r]!;
-    // Skids only when on the ground; in flight the gear is up.
+    // Skids only on the ground; in flight the gear is up.
     if (flying && r >= SHIP_H - 2) continue;
     for (let c = 0; c < SHIP_W; c++) {
       const col = pal[row[c]!];
@@ -153,64 +385,31 @@ function drawShip(ctx: CanvasRenderingContext2D, cx: number, cy: number, kit: Ki
 }
 
 /**
- * A world: Lunar Dust disc, lit from the upper left, the night side dithered
- * in, a few seeded craters.
+ * The ground on the stadium world: a two-tier stand in the home kit around a
+ * lit pitch, floodlight masts whose lamps flicker on in turn, beams onto the
+ * pitch. It is sunk into the surface, with ground built up under every
+ * column of the stand, so no part of it floats.
  */
-function drawWorld(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, seed: number, dim = 0) {
-  pixelEllipse(ctx, cx, cy, r, r, canvasColor.figureDark);
-  const lx = -0.55, ly = -0.65;
-  for (let y = Math.floor(cy - r); y <= Math.ceil(cy + r); y++) {
-    if (y < -1 || y > ART.h) continue;
-    for (let x = Math.floor(cx - r); x <= Math.ceil(cx + r); x++) {
-      const dx = (x + 0.5 - cx) / r, dy = (y + 0.5 - cy) / r;
-      const d2 = dx * dx + dy * dy;
-      if (d2 >= 1) continue;
-      const dz = Math.sqrt(1 - d2);
-      const light = dx * lx + dy * ly + dz * 0.5 - dim;
-      // Mostly the mid shade, a lit cap on the sun side, the terminator
-      // dithered into the dark: the viewer's tones, never a pale blob.
-      if (light > 0.82) px(ctx, x, y, 1, 1, canvasColor.figureLight);
-      else if (light > 0.72 && (x + y) % 2 === 0) px(ctx, x, y, 1, 1, canvasColor.figureLight);
-      else if (light > 0.3) px(ctx, x, y, 1, 1, canvasColor.figureMid);
-      else if (light > 0.12 && (x + y) % 2 === 0) px(ctx, x, y, 1, 1, canvasColor.figureMid);
-    }
-  }
-  // Craters.
-  let h = seed * 9973 + 17;
-  const rnd = () => ((h = (h * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < Math.max(2, Math.round(r / 5)); i++) {
-    const a = rnd() * Math.PI * 2, d = rnd() * r * 0.7;
-    const x = Math.round(cx + Math.cos(a) * d), y = Math.round(cy + Math.sin(a) * d);
-    if (y > ART.h) continue;
-    px(ctx, x, y, 2, 1, canvasColor.figureDark);
-    px(ctx, x, y - 1, 2, 1, canvasColor.figureMid);
-  }
-}
-
-/**
- * The ground on the stadium world's horizon: a stand in the home kit around
- * a lit pitch, two floodlight masts whose lamps blink on in turn, and pixel
- * beams falling onto the pitch.
- */
-function drawStadium(ctx: CanvasRenderingContext2D, kit: Kit, t: number) {
+function drawStadium(ctx: CanvasRenderingContext2D, kit: Kit, ground: string, t: number) {
   const gx = GROUND_X;
-  const gy = Math.round(horizonY(gx));
-  // Beams first, behind the stand.
+  const gy = Math.round(horizonY(gx)) + 3;
+  for (let x = gx - 27; x <= gx + 27; x++) {
+    const top = gy - 4;
+    const h = Math.round(horizonY(x)) - top + 1;
+    if (h > 0) px(ctx, x, top, 1, h, ground);
+  }
   pline(ctx, gx - 26, gy - 32, gx - 10, gy - 8, canvasColor.line);
   pline(ctx, gx + 26, gy - 32, gx + 10, gy - 8, canvasColor.line);
-  // Masts and lamp heads; the lamps flicker on in turn.
   for (const side of [-1, 1]) {
     const mx = gx + side * 27;
     px(ctx, mx, gy - 32, 1, 30, canvasColor.figureMid);
-    const lit = t === 0 || Math.floor(t / 700 + (side > 0 ? 0.5 : 0)) % 2 === 0;
+    const on = t === 0 || Math.floor(t / 700 + (side > 0 ? 0.5 : 0)) % 2 === 0;
     px(ctx, mx - 2, gy - 35, 5, 3, canvasColor.figureDark);
-    px(ctx, mx - 1, gy - 34, 3, 1, lit ? canvasColor.figureGlow : canvasColor.figureLight);
+    px(ctx, mx - 1, gy - 34, 3, 1, on ? canvasColor.figureGlow : canvasColor.figureLight);
   }
-  // The stand: a stepped bowl in the kit, the upper tier outlined.
   pixelEllipse(ctx, gx, gy - 4, 24, 9, kit.outline);
   pixelEllipse(ctx, gx, gy - 4, 23, 8, kit.shirt);
   pixelEllipse(ctx, gx, gy - 5, 19, 6, kit.outline);
-  // The pitch inside, lit, with its halfway line and centre circle.
   pixelEllipse(ctx, gx, gy - 5, 15, 4, canvasColor.text);
   px(ctx, gx, gy - 9, 1, 8, canvasColor.figureMid);
   px(ctx, gx - 2, gy - 6, 1, 2, canvasColor.figureMid);
@@ -232,29 +431,51 @@ function drawRoute(ctx: CanvasRenderingContext2D, at: (t: number) => Pt, progres
 
 // ── Frame ───────────────────────────────────────────────────────────────────
 
+/** The static worlds, drawn once per pair of looks. */
+let layer: { key: string; canvas: HTMLCanvasElement } | null = null;
+
+function worldsLayer(awayLook: WorldLook, homeLook: WorldLook): HTMLCanvasElement | null {
+  const key = JSON.stringify([awayLook, homeLook]);
+  if (layer?.key === key) return layer.canvas;
+  const canvas = document.createElement('canvas');
+  canvas.width = ART.w * PIXEL_SCALE;
+  canvas.height = ART.h * PIXEL_SCALE;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  setGrid(PIXEL_SCALE);
+  resetFill();
+  const w = awayWorld(awayLook.size);
+  drawBody(ctx, w.cx, w.cy, w.r, awayLook, 3);
+  drawBody(ctx, BASE.cx, BASE.cy, BASE.r, TRAINING_MOON, 5);
+  if (homeLook.ring) skyRing(ctx, homeLook.ring);
+  // The near world fills the corner, so it is dimmed: the stand is the
+  // bright thing on it.
+  drawBody(ctx, STADIUM_WORLD.cx, STADIUM_WORLD.cy, STADIUM_WORLD.r, homeLook.feature === 'station' ? { ...TRAINING_MOON, size: 'giant' } : homeLook, 8, 0.3);
+  layer = { key, canvas };
+  return canvas;
+}
+
 /**
  * Draw one frame into a canvas sized ART x PIXEL_SCALE.
  */
 export function drawJourney(ctx: CanvasRenderingContext2D, f: JourneyFrame): void {
+  const worlds = worldsLayer(f.awayLook, f.homeLook);
   setGrid(PIXEL_SCALE);
   resetFill();
   px(ctx, 0, 0, ART.w, ART.h, canvasColor.bg);
 
-  // Stars: single pixels, a few twinkling.
+  // Stars behind everything: single pixels, a few twinkling.
   f.stars.forEach((s, i) => {
     const twinkle = f.t !== 0 && i % 9 === 0 && Math.floor(f.t / 500 + i) % 4 === 0;
     if (!twinkle) px(ctx, s.x, s.y, 1, 1, s.o > 0.5 ? canvasColor.figureMid : canvasColor.figureDark);
   });
+  if (worlds) ctx.drawImage(worlds, 0, 0);
+  resetFill();
 
-  const w = awayWorld(f.awaySmall);
-  const r = routes(f.awaySmall);
-  drawWorld(ctx, w.cx, w.cy, w.r, 3);
-  drawWorld(ctx, BASE.cx, BASE.cy, BASE.r, 5);
+  const r = routes(f.awayLook.size);
   drawRoute(ctx, r.away.at, f.away.phase === 'docked' ? -1 : f.away.progress, f.away.kit);
   drawRoute(ctx, r.home.at, f.home.phase === 'docked' ? -1 : f.home.progress, f.home.kit);
-  // The near world fills the corner, so it is dimmed: the stadium is the bright thing on it.
-  drawWorld(ctx, STADIUM_WORLD.cx, STADIUM_WORLD.cy, STADIUM_WORLD.r, 8, 0.45);
-  drawStadium(ctx, f.homeKit, f.t);
+  drawStadium(ctx, f.homeKit, f.homeLook.feature === 'station' ? TRAINING_MOON.shades[0] : f.homeLook.shades[0], f.t);
 
   const place = (s: ShipFrame, leg: (typeof r)['away'], seed: number) => {
     const flying = s.phase === 'flying';

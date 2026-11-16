@@ -106,6 +106,7 @@ export type { MatchViewerProps, MatchViewerPlayer } from './ui/viewer/MatchViewe
 // Always-available admin showcase: a looping synthetic match in the viewer.
 export { MatchViewerDemo } from './ui/viewer/MatchViewerDemo';
 export { MatchJourney, type JourneyTeam } from './ui/journey/MatchJourney';
+export { WorldGallery } from './ui/journey/WorldGallery';
 export { PitchSurface } from './ui/pitch/PitchSurface';
 
 // ── Mini-pitch chip + shared broadcast hook (issue isl-a8i) ───────────────
