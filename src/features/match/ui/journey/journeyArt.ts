@@ -54,8 +54,12 @@ export interface JourneyFrame {
 
 // ── Layout (art pixels) ─────────────────────────────────────────────────────
 
-/** The stadium world: a big horizon low on the right. */
-const STADIUM_WORLD = { cx: 266, cy: 292, r: 132 };
+/**
+ * The stadium world, seen on arrival: a wide, gently curving horizon along
+ * the bottom of the scene, nearly level under the ground, so the stand and
+ * the parked ships stand on land rather than on the crest of a ball.
+ */
+const STADIUM_WORLD = { cx: 240, cy: 760, r: 600 };
 /** The home club's training base: a small moon top right. */
 const BASE = { cx: 286, cy: 40, r: 7 };
 /**
@@ -154,10 +158,8 @@ function drawBody(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: numb
 
   if (look.ring && r < 60) ringPixels(ctx, cx, cy, r, look.ring, 'back');
 
-  for (let y = Math.floor(cy - r - 2); y <= Math.ceil(cy + r + 2); y++) {
-    if (y < 0 || y >= ART.h) continue;
-    for (let x = Math.floor(cx - xr - 2); x <= Math.ceil(cx + xr + 2); x++) {
-      if (x < 0 || x >= ART.w) continue;
+  for (let y = Math.max(0, Math.floor(cy - r - 2)); y <= Math.min(ART.h - 1, Math.ceil(cy + r + 2)); y++) {
+    for (let x = Math.max(0, Math.floor(cx - xr - 2)); x <= Math.min(ART.w - 1, Math.ceil(cx + xr + 2)); x++) {
       const dx = (x + 0.5 - cx) / xr;
       const dy = (y + 0.5 - cy) / r;
       let edge = 1;
@@ -313,14 +315,13 @@ function drawStation(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: n
  * sky behind the horizon (Saturn, Uranus).
  */
 function skyRing(ctx: CanvasRenderingContext2D, col: string) {
-  const { cx, cy, r } = STADIUM_WORLD;
   for (let i = 0; i < 3; i++) {
-    const rx = r * 1.25 + i * 2, ry = r * 0.82 + i * 2;
+    const rx = 230 + i * 3, ry = 140 + i * 3, cx = 170, cy = 210;
     for (let x = 0; x < ART.w; x++) {
       const dx = (x + 0.5 - cx) / rx;
       if (Math.abs(dx) >= 1) continue;
       const y = Math.round(cy - ry * Math.sqrt(1 - dx * dx));
-      if (y < horizonY(x) && i !== 1) px(ctx, x, y, 1, 1, col);
+      if (y < horizonY(x) - 1 && i !== 1) px(ctx, x, y, 1, 1, col);
     }
   }
 }
