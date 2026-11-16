@@ -25,12 +25,15 @@ import { useReducedMotion } from '@features/entities';
 import { formatSpan, legState, legStatus, matchJourney, worldOf, type Leg } from '../../logic/journey';
 import { resolveKits } from '../../logic/viewer';
 import { PIXEL_SCALE } from '../viewer/render';
+import { groundFor } from '../../../../data/stadiums';
 import { ART, drawJourney, labelAnchors, starfield } from './journeyArt';
 
 export { starfield } from './journeyArt';
 
 /** One club as the journey needs it. */
 export interface JourneyTeam {
+  /** Team id: picks the club's ground from the lore (data/stadiums.ts). */
+  id?: string | null;
   name: string;
   color: string | null;
   /** Home world (teams.location). */
@@ -56,7 +59,7 @@ const FRAME_MS = 100;
  *
  * @returns Header with the countdown, the pixel scene, both ships' status.
  */
-export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourneyProps) {
+export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }: MatchJourneyProps) {
   const now = useNow(1000);
   const reducedMotion = useReducedMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,7 +72,8 @@ export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourn
   const stadiumWorld = worldOf(home.location);
   const awayWorld = worldOf(away.location);
   const derby = stadiumWorld.name === awayWorld.name;
-  const anchors = labelAnchors(awayWorld.look.size);
+  const ground = useMemo(() => groundFor(home.id), [home.id]);
+  const anchors = labelAnchors(awayWorld.look.size, ground.look.style);
 
   const awayState = legState(journey.away, now);
   const homeState = legState(journey.home, now);
@@ -84,6 +88,7 @@ export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourn
         away: { kit: kits.away.outfield, ...awayState },
         home: { kit: kits.home.outfield, ...homeState },
         homeKit: kits.home.outfield,
+        stadium: { style: ground.look.style, capacity: ground.capacity },
         awayLook: awayWorld.look,
         homeLook: stadiumWorld.look,
         stars,
@@ -106,7 +111,7 @@ export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourn
     return () => cancelAnimationFrame(raf);
     // The states are re-derived each second; their fields are the real inputs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kits, awayState.phase, awayState.progress, homeState.phase, homeState.progress, awayWorld.look, stadiumWorld.look, stars, reducedMotion]);
+  }, [kits, awayState.phase, awayState.progress, homeState.phase, homeState.progress, awayWorld.look, stadiumWorld.look, ground, stars, reducedMotion]);
 
   const label = `${away.name}: ${legStatus(journey.away, now, clock)}. ${home.name}: ${legStatus(journey.home, now, clock)}.`;
 
@@ -115,7 +120,7 @@ export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourn
       <Stack direction="row" justify="space-between" align="end" gap={16} wrap>
         <Stack gap={4} style={{ minWidth: 0 }}>
           <span style={{ ...type.label, ...tone.secondary }}>Match day{derby ? ` \u00B7 ${stadiumWorld.name} derby` : ''}</span>
-          <span style={{ ...type.subheading }}>On the way to {ground ?? stadiumWorld.name}</span>
+          <span style={{ ...type.subheading }}>On the way to {groundName ?? ground.name ?? stadiumWorld.name}</span>
         </Stack>
         <Stack gap={4} align="end">
           <span style={{ ...type.label, ...tone.secondary }}>Kick-off in</span>
@@ -144,10 +149,18 @@ export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourn
           aria-label={label}
           style={{ width: '100%', height: '100%', display: 'block', imageRendering: 'pixelated' }}
         />
-        <SceneLabel at={anchors.away} text={derby ? `${awayWorld.name}, far side` : awayWorld.name} />
+        <SceneLabel at={anchors.away} align="start" text={derby ? `${awayWorld.name}, far side` : awayWorld.name} />
         <SceneLabel at={anchors.base} text="Training base" align="end" />
         <SceneLabel at={anchors.ground} text={stadiumWorld.name} />
       </div>
+
+      {/* The ground, in the lore's own words. */}
+      {(ground.nickname || ground.look.line) && (
+        <Stack gap={4}>
+          {ground.nickname && <span style={{ ...type.label, ...tone.secondary }}>{`${ground.name ?? ''} \u00B7 ${ground.nickname}`}</span>}
+          {ground.look.line && <span style={{ ...type.small, ...tone.primary }}>{`\u201C${ground.look.line}\u201D`}</span>}
+        </Stack>
+      )}
 
       <Stack gap={12}>
         <ShipRow team={away} side="Away" leg={journey.away} now={now} clock={clock} bar={kits.away.outfield.shirt} />
@@ -158,14 +171,16 @@ export function MatchJourney({ home, away, kickoffMs, ground, seed }: MatchJourn
 }
 
 /** A place name laid over the scene, as page text in the label style. */
-function SceneLabel({ at, text, align = 'center' }: { at: { x: number; y: number }; text: string; align?: 'center' | 'end' }) {
+function SceneLabel({ at, text, align = 'center' }: { at: { x: number; y: number }; text: string; align?: 'start' | 'center' | 'end' }) {
   const style: CSSProperties = {
     ...type.label,
     ...tone.secondary,
     position: 'absolute',
-    left: `${at.x * 100}%`,
+    left: align === 'start' ? space[4] : `${at.x * 100}%`,
     top: `${at.y * 100}%`,
-    transform: align === 'end' ? 'translateX(-100%)' : 'translateX(-50%)',
+    // A start label hangs from the frame's left edge so a long world name
+    // never runs out of it on a phone.
+    transform: align === 'end' ? 'translateX(-100%)' : align === 'start' ? 'none' : 'translateX(-50%)',
     // The viewer's overlay treatment (its Replay tag): an Abyss backing so
     // the label reads over a world.
     background: color.bg,

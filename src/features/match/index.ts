@@ -107,6 +107,7 @@ export type { MatchViewerProps, MatchViewerPlayer } from './ui/viewer/MatchViewe
 export { MatchViewerDemo } from './ui/viewer/MatchViewerDemo';
 export { MatchJourney, type JourneyTeam } from './ui/journey/MatchJourney';
 export { WorldGallery } from './ui/journey/WorldGallery';
+export { GroundGallery } from './ui/journey/GroundGallery';
 export { PitchSurface } from './ui/pitch/PitchSurface';
 
 // ── Mini-pitch chip + shared broadcast hook (issue isl-a8i) ───────────────

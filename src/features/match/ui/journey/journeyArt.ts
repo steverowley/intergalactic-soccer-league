@@ -16,7 +16,9 @@
 // The worlds are static, so they are drawn once into an offscreen layer per
 // fixture; each animation frame copies that and adds the moving parts.
 
-import { TRAINING_MOON, type WorldLook } from '../../../../data/leagueData';
+import { TRAINING_MOON, WORLDS, type WorldLook } from '../../../../data/leagueData';
+import type { StadiumStyle } from '../../../../data/stadiums';
+import { deckLift, drawStadium, skyBody } from './stadiumArt';
 import { canvasColor } from '../../../../shared/design';
 import type { Kit } from '../../logic/viewer';
 import { pixelEllipse, pline, px, resetFill, setGrid } from '../viewer/figure';
@@ -39,6 +41,8 @@ export interface JourneyFrame {
   home: ShipFrame;
   /** The home club's kit, for the stadium stand. */
   homeKit: Kit;
+  /** The home club's ground (data/stadiums.ts) and its seats. */
+  stadium: { style: StadiumStyle; capacity: number };
   /** The away club's world and the stadium (home) world. */
   awayLook: WorldLook;
   homeLook: WorldLook;
@@ -77,12 +81,13 @@ function horizonY(x: number): number {
 }
 
 /** Label anchors as fractions of the canvas, for page text laid over it. */
-export function labelAnchors(size: WorldLook['size']) {
+export function labelAnchors(size: WorldLook['size'], style: StadiumStyle = 'cradle') {
+  const below = style === 'subsurface' || style === 'pit' || style === 'underground' || style === 'trench' ? 34 : 24;
   const w = awayWorld(size);
   return {
     away: { x: w.cx / ART.w, y: (w.cy + w.r + 6) / ART.h },
     base: { x: (BASE.cx + BASE.r + 4) / ART.w, y: (BASE.cy + BASE.r + 4) / ART.h },
-    ground: { x: GROUND_X / ART.w, y: (horizonY(GROUND_X) + 24) / ART.h },
+    ground: { x: GROUND_X / ART.w, y: (horizonY(GROUND_X) + below) / ART.h },
   };
 }
 
@@ -98,13 +103,17 @@ function quad(a: Pt, c: Pt, b: Pt) {
 }
 
 /** The two routes and the ships' rest points (sprite centres). */
-function routes(size: WorldLook['size']) {
+/** Grounds with no surface under them: the ships park at deck height. */
+const FLOATING: readonly StadiumStyle[] = ['storm', 'tilted', 'colosseum'];
+
+function routes(size: WorldLook['size'], style: StadiumStyle) {
+  const deck = FLOATING.includes(style) ? deckLift(style) : 0;
   const w = awayWorld(size);
   const gy = horizonY(GROUND_X);
   const awayDock = { x: w.cx + w.r * 1.3 + 16, y: w.cy - 4 };
-  const awayPark = { x: GROUND_X - 46, y: horizonY(GROUND_X - 46) - 6 };
+  const awayPark = { x: GROUND_X - 46, y: horizonY(GROUND_X - 46) - 6 - deck };
   const homeDock = { x: BASE.cx - 22, y: BASE.cy + 2 };
-  const homePark = { x: GROUND_X + 44, y: horizonY(GROUND_X + 44) - 6 };
+  const homePark = { x: GROUND_X + 44, y: horizonY(GROUND_X + 44) - 6 - deck };
   return {
     away: { at: quad(awayDock, { x: 140, y: 6 }, awayPark), dock: awayDock, park: awayPark },
     home: { at: quad(homeDock, { x: GROUND_X + 56, y: gy - 50 }, homePark), dock: homeDock, park: homePark },
@@ -152,7 +161,9 @@ function drawBody(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: numb
       const dx = (x + 0.5 - cx) / xr;
       const dy = (y + 0.5 - cy) / r;
       let edge = 1;
-      if (f === 'asteroid') {
+      // Lumpy outline for a small rock; the near world keeps a true horizon
+      // so the ground and the parked ships sit on it.
+      if (f === 'asteroid' && r < 60) {
         // A lumpy outline: the radius wanders with the angle.
         const a = Math.atan2(dy, dx);
         edge = 0.78 + 0.3 * noise(Math.cos(a) * 1.6 + 5, Math.sin(a) * 1.6 + 5, seed);
@@ -329,6 +340,32 @@ export function drawWorldTile(ctx: CanvasRenderingContext2D, look: WorldLook, se
   drawBody(ctx, TILE / 2, TILE / 2, look.ring ? 15 : SIZE_R[look.size], look, seed);
 }
 
+/** Size of one ground tile, art pixels. */
+export const GROUND_TILE = { w: 104, h: 72 } as const;
+
+/**
+ * One club's ground on a strip of its world, for the shelf's gallery.
+ */
+export function drawGroundTile(ctx: CanvasRenderingContext2D, style: StadiumStyle, kit: Kit, world: WorldLook, capacity: number, t: number): void {
+  setGrid(PIXEL_SCALE);
+  resetFill();
+  const { w, h } = GROUND_TILE;
+  px(ctx, 0, 0, w, h, canvasColor.bg);
+  const look = world.feature === 'station' ? TRAINING_MOON : world;
+  const surf = (x: number) => 46 + ((x - w / 2) * (x - w / 2)) / 900;
+  if (look.ring) for (let x = 0; x < w; x++) px(ctx, x, Math.round(14 + ((x - w / 2) * (x - w / 2)) / 260), 1, 1, look.ring);
+  for (let x = 0; x < w; x++) {
+    const y = Math.round(surf(x));
+    px(ctx, x, y, 1, h - y, look.shades[1]);
+    px(ctx, x, y, 1, 1, look.shades[2]);
+    if (x % 2 === 0) px(ctx, x, y + 4, 1, h - y - 4, look.shades[0]);
+  }
+  const sky = skyBody(style);
+  const skyLook = sky ? WORLDS[sky]?.look : undefined;
+  if (skyLook) drawBody(ctx, 20, 16, 9, skyLook, 4);
+  drawStadium({ ctx, gx: w / 2, surf, kit, world: look, capacity, t }, style);
+}
+
 // ── Sprites ─────────────────────────────────────────────────────────────────
 
 /**
@@ -384,38 +421,6 @@ function drawShip(ctx: CanvasRenderingContext2D, cx: number, cy: number, kit: Ki
   }
 }
 
-/**
- * The ground on the stadium world: a two-tier stand in the home kit around a
- * lit pitch, floodlight masts whose lamps flicker on in turn, beams onto the
- * pitch. It is sunk into the surface, with ground built up under every
- * column of the stand, so no part of it floats.
- */
-function drawStadium(ctx: CanvasRenderingContext2D, kit: Kit, ground: string, t: number) {
-  const gx = GROUND_X;
-  const gy = Math.round(horizonY(gx)) + 3;
-  for (let x = gx - 27; x <= gx + 27; x++) {
-    const top = gy - 4;
-    const h = Math.round(horizonY(x)) - top + 1;
-    if (h > 0) px(ctx, x, top, 1, h, ground);
-  }
-  pline(ctx, gx - 26, gy - 32, gx - 10, gy - 8, canvasColor.line);
-  pline(ctx, gx + 26, gy - 32, gx + 10, gy - 8, canvasColor.line);
-  for (const side of [-1, 1]) {
-    const mx = gx + side * 27;
-    px(ctx, mx, gy - 32, 1, 30, canvasColor.figureMid);
-    const on = t === 0 || Math.floor(t / 700 + (side > 0 ? 0.5 : 0)) % 2 === 0;
-    px(ctx, mx - 2, gy - 35, 5, 3, canvasColor.figureDark);
-    px(ctx, mx - 1, gy - 34, 3, 1, on ? canvasColor.figureGlow : canvasColor.figureLight);
-  }
-  pixelEllipse(ctx, gx, gy - 4, 24, 9, kit.outline);
-  pixelEllipse(ctx, gx, gy - 4, 23, 8, kit.shirt);
-  pixelEllipse(ctx, gx, gy - 5, 19, 6, kit.outline);
-  pixelEllipse(ctx, gx, gy - 5, 15, 4, canvasColor.text);
-  px(ctx, gx, gy - 9, 1, 8, canvasColor.figureMid);
-  px(ctx, gx - 2, gy - 6, 1, 2, canvasColor.figureMid);
-  px(ctx, gx + 2, gy - 6, 1, 2, canvasColor.figureMid);
-}
-
 /** A route as dots, the flown part solid in the kit. */
 function drawRoute(ctx: CanvasRenderingContext2D, at: (t: number) => Pt, progress: number, kit: Kit) {
   const steps = 120;
@@ -434,8 +439,8 @@ function drawRoute(ctx: CanvasRenderingContext2D, at: (t: number) => Pt, progres
 /** The static worlds, drawn once per pair of looks. */
 let layer: { key: string; canvas: HTMLCanvasElement } | null = null;
 
-function worldsLayer(awayLook: WorldLook, homeLook: WorldLook): HTMLCanvasElement | null {
-  const key = JSON.stringify([awayLook, homeLook]);
+function worldsLayer(awayLook: WorldLook, homeLook: WorldLook, style: StadiumStyle): HTMLCanvasElement | null {
+  const key = JSON.stringify([awayLook, homeLook, style]);
   if (layer?.key === key) return layer.canvas;
   const canvas = document.createElement('canvas');
   canvas.width = ART.w * PIXEL_SCALE;
@@ -448,6 +453,10 @@ function worldsLayer(awayLook: WorldLook, homeLook: WorldLook): HTMLCanvasElemen
   drawBody(ctx, w.cx, w.cy, w.r, awayLook, 3);
   drawBody(ctx, BASE.cx, BASE.cy, BASE.r, TRAINING_MOON, 5);
   if (homeLook.ring) skyRing(ctx, homeLook.ring);
+  // A world hanging over the ground (Pluto over Charon's north stand).
+  const sky = skyBody(style);
+  const skyLook = sky ? WORLDS[sky]?.look : undefined;
+  if (skyLook) drawBody(ctx, GROUND_X - 34, 92, 15, skyLook, 4);
   // The near world fills the corner, so it is dimmed: the stand is the
   // bright thing on it.
   drawBody(ctx, STADIUM_WORLD.cx, STADIUM_WORLD.cy, STADIUM_WORLD.r, homeLook.feature === 'station' ? { ...TRAINING_MOON, size: 'giant' } : homeLook, 8, 0.3);
@@ -459,7 +468,7 @@ function worldsLayer(awayLook: WorldLook, homeLook: WorldLook): HTMLCanvasElemen
  * Draw one frame into a canvas sized ART x PIXEL_SCALE.
  */
 export function drawJourney(ctx: CanvasRenderingContext2D, f: JourneyFrame): void {
-  const worlds = worldsLayer(f.awayLook, f.homeLook);
+  const worlds = worldsLayer(f.awayLook, f.homeLook, f.stadium.style);
   setGrid(PIXEL_SCALE);
   resetFill();
   px(ctx, 0, 0, ART.w, ART.h, canvasColor.bg);
@@ -472,10 +481,22 @@ export function drawJourney(ctx: CanvasRenderingContext2D, f: JourneyFrame): voi
   if (worlds) ctx.drawImage(worlds, 0, 0);
   resetFill();
 
-  const r = routes(f.awayLook.size);
+  const r = routes(f.awayLook.size, f.stadium.style);
   drawRoute(ctx, r.away.at, f.away.phase === 'docked' ? -1 : f.away.progress, f.away.kit);
   drawRoute(ctx, r.home.at, f.home.phase === 'docked' ? -1 : f.home.progress, f.home.kit);
-  drawStadium(ctx, f.homeKit, f.homeLook.feature === 'station' ? TRAINING_MOON.shades[0] : f.homeLook.shades[0], f.t);
+  drawStadium(
+    {
+      ctx,
+      gx: GROUND_X,
+      surf: horizonY,
+      kit: f.homeKit,
+      world: f.homeLook.feature === 'station' ? TRAINING_MOON : f.homeLook,
+      capacity: f.stadium.capacity,
+      t: f.t,
+    },
+    f.stadium.style,
+  );
+  resetFill();
 
   const place = (s: ShipFrame, leg: (typeof r)['away'], seed: number) => {
     const flying = s.phase === 'flying';
