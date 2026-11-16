@@ -18,7 +18,8 @@ describe('STADIUMS', () => {
     const lore = await import('./lore.generated');
     const text = JSON.stringify(lore) + JSON.stringify(teams);
     for (const [id, s] of Object.entries(STADIUMS)) {
-      if (s.line) expect(text.includes(s.line.replace(/"/g, '\\"')) || text.includes(s.line), id).toBe(true);
+      // Compare JSON-escaped, the way the line appears inside the serialised lore.
+      if (s.line) expect(text.includes(JSON.stringify(s.line).slice(1, -1)), id).toBe(true);
     }
   });
 });
