@@ -20,7 +20,7 @@
 //   average-rated sides instead.  Identical sides cancel each other out and
 //   made a different, poorer match than the league plays: on 480 matches
 //   that fixture gave 2.27 goals, 3.80 saves, 0.42 draws and 0.11 penalties a
-//   match, while the same engine on real squads gives 2.88, 6.32, 0.28 and
+//   match, while the same engine on real squads gave 2.88, 6.32, 0.28 and
 //   0.19, and the live league (Season 1, 234 matches) gave 2.99 goals, 6.19
 //   saves and 0.29 draws.  The old fixture's saves, goals, draws and
 //   penalties gaps were properties of the fixture, not of the league; tuning
@@ -83,38 +83,39 @@ const TARGET: Record<string, readonly [number, number]> = {
  * Metrics the engine does not yet reach on real squads, the measured reason,
  * and the regression band asserted instead (it contains the target band).
  *
- * Measured on main at 480 real-squad matches (scripts/run-batch.sh isl 480,
- * seeds 1000..1479, this test's batch included), mean (SE):
- * passes 1037 (4.7), tackles 59.7 (0.55), interceptions 35.0 (0.69),
- * corners 7.11 (0.13).  Every other metric is inside its band at that scale
- * (saves 6.32, goals 2.88, draws 0.275, penalties 0.190 (SE 0.019),
- * offsides 2.14, throw-ins 36.4, pass completion 0.862 (SE 0.001)).
+ * Measured at 480 real-squad matches (scripts/run-batch.sh isl 480, seeds
+ * 1000..1479, this test's batch included) on the engine with the keeper
+ * high-ball fix (November 2026), mean (SE): passes 1039 (4.8), tackles 59.7
+ * (0.54), interceptions 35.0 (0.68), corners 7.06 (0.13).  Every other
+ * metric is inside its band at that scale (goals 2.64, 0-0 0.092, saves
+ * 6.29, draws 0.285, penalties 0.196 (SE 0.019), offsides 2.16, throw-ins
+ * 36.4, pass completion 0.862 (SE 0.001)).
  *
  * Each band is the measured mean plus (for a metric above its target) or
  * minus (below it) 2.5 standard errors of a 24-match batch (per-match SD /
  * sqrt(24)), the tolerance the target bands use; the other bound is the
  * target's.  Saves left this list: their gap was a property of the old
- * equal-sides fixture (3.80 a match there over 480 matches, 6.32 on real squads).
+ * equal-sides fixture (3.80 a match there over 480 matches, 6.29 on real squads).
  */
 const KNOWN_GAPS: Record<string, { band: readonly [number, number]; cause: string }> = {
   passes: {
-    // 1037 + 2.5 x 21.2 (per-match SD 104) = 1090.6.
-    band: [700, 1091],
+    // 1039 + 2.5 x 21.3 (per-match SD 104) = 1092.3.
+    band: [700, 1093],
     cause: 'real squads keep the ball: completion sits at the top of its band (0.862), so possessions run to more passes than in the old equal-sides fixture (981 passes at 0.812 completion); the carrier still recycles short when the lane ahead is contested',
   },
   tackles: {
-    // 59.7 + 2.5 x 2.46 (per-match SD 12.1) = 65.8.
+    // 59.7 + 2.5 x 2.43 (per-match SD 11.9) = 65.7.
     band: [25, 66],
     cause: 'carriers still take touches into a presser before they have settled the ball, and a defender who meets a ball knocked a stride ahead of its man wins it',
   },
   interceptions: {
-    // 35.0 + 2.5 x 3.06 (per-match SD 15.0) = 42.7.
+    // 35.0 + 2.5 x 3.03 (per-match SD 14.8) = 42.6.
     band: [15, 43],
     cause: 'passes into marked men in a crowded middle third are cut out; passers judge lanes slightly pessimistically yet still play into contested ones under pressure',
   },
   corners: {
-    // 7.11 - 2.5 x 0.60 (per-match SD 2.93) = 5.6.
-    band: [5.6, 12],
+    // 7.06 - 2.5 x 0.59 (per-match SD 2.91) = 5.58.
+    band: [5.5, 12],
     cause: 'parries at full stretch and glancing headers now go behind, but blocked shots mostly rebound into the field and few clearances or crosses go out off a defender',
   },
 };

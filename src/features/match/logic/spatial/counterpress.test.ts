@@ -8,15 +8,16 @@
 // HOW MANY MATCHES, AND WHERE THE THRESHOLDS COME FROM
 //   The measurement lives in calibration/counterpressMetric.ts and is shared
 //   with scripts/counterpress-batch.ts.  Over 48 pairs (seeds 4100 + 2k) on
-//   the engine of November 2026 a counter-pressing side regained the ball
-//   within 6 s on 0.512 of its losses against 0.366 for a recovering side:
-//   a difference of 0.145, per-pair SD 0.059.  This test used to play ONE
+//   the engine of November 2026 (with the keeper high-ball fix) a
+//   counter-pressing side regained the ball within 6 s on 0.514 of its
+//   losses against 0.365 for a recovering side: a difference of 0.147,
+//   per-pair SD 0.060 (0.145 and 0.059 before that fix).  This test used to play ONE
 //   pair and require a difference above 0.16, which the engine clears in only
 //   about a third of pairs: it passed by the luck of its seed.  It now plays
 //   PAIRS pairs (the first PAIRS of that batch) and requires the difference
 //   to exceed the measured mean less 2.5 standard errors of a PAIRS-pair
-//   sample: 0.145 - 2.5 x 0.059 / sqrt(6) = 0.085.  Men within 10 m: 2.18
-//   v 1.56 over the 48 pairs (difference 0.62, per-pair SD 0.095), far
+//   sample: 0.147 - 2.5 x 0.060 / sqrt(6) = 0.086.  Men within 10 m: 2.18
+//   v 1.56 over the 48 pairs (difference 0.62, per-pair SD 0.097), far
 //   clear of both of its thresholds.  Re-measure with
 //   `bash scripts/run-counterpress.sh <prefix> 48` and
 //   `REPORT=<prefix> npx tsx scripts/counterpress-batch.ts` after an engine
@@ -55,6 +56,6 @@ describe('phases of play: the counter-press happens as the manager plans it', ()
     const p = tally.P.regained / tally.P.losses;
     const r = tally.R.regained / tally.R.losses;
     // v1: 0.453 v 0.356.  Threshold: measured over 48 pairs, see the header.
-    expect(p, `counter-press ${p.toFixed(3)} v recover ${r.toFixed(3)} regained in 6 s`).toBeGreaterThan(r + 0.085);
+    expect(p, `counter-press ${p.toFixed(3)} v recover ${r.toFixed(3)} regained in 6 s`).toBeGreaterThan(r + 0.086);
   });
 });
