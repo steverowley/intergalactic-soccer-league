@@ -44,7 +44,7 @@ describe('newPlayerEntityPayload', () => {
 });
 
 /** Fake client recording each table touched and each payload written. */
-function fakeDb(entityResult: { data: unknown; error: unknown }) {
+function fakeDb(entityResult: { data: unknown; error: unknown }, linkError: unknown = null) {
   const calls: Array<{ table: string; op: string; payload?: unknown }> = [];
   const db = {
     from(table: string) {
@@ -55,7 +55,15 @@ function fakeDb(entityResult: { data: unknown; error: unknown }) {
         },
         update(payload: unknown) {
           calls.push({ table, op: 'update', payload });
-          return { eq: async () => ({ error: null }) };
+          return { eq: async () => ({ error: linkError }) };
+        },
+        delete() {
+          return {
+            eq: async (_col: string, value: unknown) => {
+              calls.push({ table, op: 'delete', payload: value });
+              return { error: null };
+            },
+          };
         },
       };
     },
@@ -89,6 +97,20 @@ describe('provisionPlayerEntity', () => {
     const { db, calls } = fakeDb({ data: null, error: { message: 'denied' } });
     expect(await provisionPlayerEntity(db, player, 'test')).toBeNull();
     expect(calls.map((c) => `${c.op}:${c.table}`)).toEqual(['insert:entities']);
+    expect(upsertPersona).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('removes the entity it inserted when the link fails, leaving no orphan', async () => {
+    upsertPersona.mockClear();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { db, calls } = fakeDb(
+      { data: { id: 'e-9', kind: 'player', name: 'Oru Vass', display_name: null, meta: {} }, error: null },
+      { message: 'link denied' },
+    );
+    expect(await provisionPlayerEntity(db, player, 'test')).toBeNull();
+    expect(calls.map((c) => `${c.op}:${c.table}`)).toEqual(['insert:entities', 'update:players', 'delete:entities']);
+    expect(calls[2]!.payload).toBe('e-9');
     expect(upsertPersona).not.toHaveBeenCalled();
     warn.mockRestore();
   });

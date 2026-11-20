@@ -15,7 +15,9 @@
 //
 // Failure policy: best-effort. A failed entity insert leaves the player
 // without an entity (he still plays; commentary falls back to a generic
-// voice) and is logged; nothing is rolled back.
+// voice) and is logged. A failed link removes the entity it just inserted so
+// no orphan is left. Either way the player keeps a null `entity_id`, and the
+// daily sweep (playerEntitySweep.ts) provisions him on its next run.
 
 import type { IslSupabaseClient } from '@shared/supabase/client';
 import type { Json } from '@/types/database';
@@ -57,7 +59,8 @@ export function newPlayerEntityPayload(player: NewPlayerRow): ReturnType<typeof 
  * @param db      Supabase client allowed to write entities/players/personas.
  * @param player  The inserted `players` row.
  * @param label   Log prefix naming the calling path.
- * @returns       The new entity id, or null when the entity insert failed.
+ * @returns       The new entity id, or null when the entity insert or the link
+ *                failed (the player is left with no entity, ready for a retry).
  */
 export async function provisionPlayerEntity(
   db: IslSupabaseClient,
@@ -91,7 +94,13 @@ export async function provisionPlayerEntity(
     .update({ entity_id: entity.id })
     .eq('id', player.id);
   if (linkErr) {
+    // Remove the entity just inserted rather than leave an orphan nobody
+    // points at: the player stays without one, so the daily sweep
+    // (playerEntitySweep.ts) provisions him cleanly on its next run.
     console.warn(`[${label}] entity link failed:`, linkErr.message);
+    const { error: undoErr } = await db.from('entities').delete().eq('id', entity.id);
+    if (undoErr) console.warn(`[${label}] orphan entity ${entity.id} not removed:`, undoErr.message);
+    return null;
   }
 
   // A fresh signing has no traits or relationships yet, so the factory falls
