@@ -50,6 +50,10 @@ export {
   houseProfitFromWager,
 } from './logic/settlement';
 
+// A bettor's profit (#733): settled wagers only, gain on top of the stake.
+export { wagerProfit, netProfit, formatSignedCredits } from './logic/profit';
+export type { ProfitInput } from './logic/profit';
+
 // ── Logic — bettor narratives (Phase 4) ────────────────────────────────────
 // Pure pattern detection + voice assignment + template selection for the
 // anonymized cosmic-voice narrative line that surfaces in Galaxy Dispatch

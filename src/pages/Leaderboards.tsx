@@ -49,7 +49,7 @@ import {
   dataHead,
 } from '../shared/ui';
 import { rankLabels } from '../shared/utils/rankLabels';
-import { getWagerLeaderboard } from '@features/betting';
+import { formatSignedCredits, getWagerLeaderboard } from '@features/betting';
 import type { WagerLeaderboardEntry } from '@features/betting';
 import { usePageTitle } from '../shared/hooks/usePageTitle';
 
@@ -179,18 +179,6 @@ export default function Leaderboards(): JSX.Element {
 // ── Wager board ────────────────────────────────────────────────────────────
 
 /**
- * A signed profit: "+120", "\u221240" (a real minus sign) or "0".
- *
- * @param n  Net profit in credits.
- * @returns  The signed label.
- */
-function signed(n: number): string {
-  if (n > 0) return `+${n}`;
-  if (n < 0) return `\u2212${Math.abs(n)}`;
-  return '0';
-}
-
-/**
  * Table of bettors: rank, username, wins, net profit. The rows arrive sorted
  * by net profit, so bettors level on profit share a rank.
  *
@@ -224,7 +212,7 @@ function WagerBoard({ rows }: { rows: WagerLeaderboardEntry[] }): JSX.Element {
                 color: row.net_profit > 0 ? color.success : color.text,
               }}
             >
-              {signed(row.net_profit)}
+              {formatSignedCredits(row.net_profit)}
             </td>
           </tr>
         ))}
