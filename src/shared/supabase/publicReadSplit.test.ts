@@ -63,6 +63,7 @@ const DIRECT_PUBLIC_READS: Readonly<Record<string, string>> = {
   'features/voting/api/enactment.ts#applyMutation':           'focus enactment (read-modify-write of players)',
   'features/voting/api/orchestrator.ts#runElectionNight':     'election night (admin-triggered, writes)',
   'features/voting/api/election.ts#getActiveSeasonWithPhase': 'election night pipeline (admin-triggered)',
+  'features/voting/api/playerEntitySweep.ts#sweepPlayerEntities': 'daily service-role job (enact-due-seasons.ts); read-then-write of players with no entity, must see the live rows',
   'features/training/api/narrativeWriter.ts#writeTrainingMilestoneNarrative': 'training milestone writer (read then insert)',
   // The architect pipeline, which no page load runs.
   'features/match/api/idols.ts#getTopIdolsForArchitect':      'Cosmic Architect pipeline, not reached by page loads',
