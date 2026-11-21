@@ -101,7 +101,7 @@ const KNOWN_GAPS: Record<string, { band: readonly [number, number]; cause: strin
   passes: {
     // 1039 + 2.5 x 21.3 (per-match SD 104) = 1092.3.
     band: [700, 1093],
-    cause: 'real squads keep the ball: completion sits at the top of its band (0.862), so possessions run to more passes than in the old equal-sides fixture (981 passes at 0.812 completion); the carrier still recycles short when the lane ahead is contested',
+    cause: 'real squads keep the ball: completion sits at the top of its band (0.862), so possessions run to more passes than in the old equal-sides fixture (981 passes at 0.812 completion); the carrier still recycles short when the lane ahead is contested (#773)',
   },
   tackles: {
     // 59.7 + 2.5 x 2.43 (per-match SD 11.9) = 65.7.
