@@ -29,7 +29,7 @@
 
 import { lazy, StrictMode, Suspense, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Route, useLocation, useNavigate } from 'react-router-dom';
 
 // Design tokens first (CSS custom properties, docs/design-language.md), so
 // index.css and every inline `var(--isl-...)` style can reference them.
@@ -50,7 +50,7 @@ import {
 // Initialise Sentry as early as possible — before React mounts — so render
 // errors caught by the outermost ErrorBoundary have a configured client to
 // report against. No-op when VITE_SENTRY_DSN is unset (dev / preview).
-import { initSentry } from './shared/observability/sentry';
+import { initSentry, SentryRoutes } from './shared/observability/sentry';
 initSentry();
 
 // ── Providers ────────────────────────────────────────────────────────────────
@@ -242,7 +242,7 @@ createRoot(document.getElementById('root')!).render(
                 listeners keep running — instead of blanking the whole
                 app via the outer ErrorBoundary. */}
             <KeyedRouteBoundary>
-            <Routes>
+            <SentryRoutes>
               {/* / → Home.  Other routes will be added as each page is
                   rebuilt; until then they 404 — intentional during the
                   phased rebuild. */}
@@ -408,7 +408,7 @@ createRoot(document.getElementById('root')!).render(
                   an unknown deep link bounces to root, the path is restored,
                   and if it still matches nothing this is what renders. */}
               <Route path="*"                   element={<NotFound />} />
-            </Routes>
+            </SentryRoutes>
             </KeyedRouteBoundary>
             </Suspense>
           </BrowserRouter>

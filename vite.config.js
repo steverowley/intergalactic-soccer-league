@@ -32,6 +32,18 @@ export default defineConfig({
   // See the BASE PATH block above for the full rationale.
   base: process.env.VERCEL ? '/' : '/soccer-league/',
 
+  // Sentry release and environment, from the host's build environment:
+  // Vercel sets VERCEL_GIT_COMMIT_SHA and VERCEL_ENV (production | preview |
+  // development); GitHub Actions sets GITHUB_SHA. Read by
+  // src/shared/observability/sentry.ts so each error names the deploy it
+  // came from. Unset locally, which is fine.
+  define: {
+    'import.meta.env.VITE_SENTRY_RELEASE': JSON.stringify(
+      process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || '',
+    ),
+    'import.meta.env.VITE_SENTRY_VERCEL_ENV': JSON.stringify(process.env.VERCEL_ENV || ''),
+  },
+
   // Path aliases — MUST match tsconfig.json and vitest.config.ts exactly.
   // See the WHY block at the top of this file for the synchronization rule.
   resolve: {
