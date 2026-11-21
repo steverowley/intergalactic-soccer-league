@@ -17,3 +17,6 @@ public/bd-snapshot.json
 
 # Standalone match-viewer demo build output
 demo/dist/
+
+# Local code-graph tool output (graphify), about 8 MB: never commit
+graphify-out/

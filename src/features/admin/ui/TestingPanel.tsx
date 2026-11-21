@@ -165,7 +165,7 @@ export function TestingPanel({ db }: { db: IslSupabaseClient }) {
       setPlayerName('');
       setPlayerJersey('');
       setPlayerStarter(false);
-      toast.success(`${playerName.trim()} added to roster.`);
+      toast.success(`${playerName.trim()} added to roster. His bio and people appear within a day.`);
     } catch (err) {
       toast.error(`Add player failed: ${String(err)}`);
     } finally {
@@ -239,6 +239,13 @@ export function TestingPanel({ db }: { db: IslSupabaseClient }) {
 
         {/* 3. Add player ──────────────────────────────────────────────────── */}
         <SectionPanel title="Add player to roster">
+          {/* The browser cannot write entities (0073), so the bio and people
+              come from the daily server sweep (playerEntitySweep.ts). */}
+          <p style={{ ...type.small, ...tone.secondary, marginTop: 0, marginBottom: space[16], maxWidth: '70ch' }}>
+            The player joins the roster at once. His bio and people (species) are written by
+            the daily server sweep, so they appear on his page within a day. To write them now,
+            run the &apos;Enact due seasons&apos; workflow from the GitHub Actions tab.
+          </p>
           <form
             onSubmit={onAddPlayer}
             style={{

@@ -48,7 +48,7 @@ import {
 } from '../shared/ui';
 import { color, numeric, space, tone } from '../shared/design';
 import { useAuth } from '../features/auth';
-import { getUserWagers, netCreditChange, type Wager } from '../features/betting';
+import { formatSignedCredits, getUserWagers, netProfit, wagerProfit, type Wager } from '../features/betting';
 import { TEAMS_BY_LEAGUE } from '../data/leagueData';
 import { usePageTitle } from '../shared/hooks/usePageTitle';
 
@@ -181,17 +181,10 @@ export default function Wagers() {
     return c;
   }, [wagers]);
 
-  // Net across all settled wagers. Uses the shared netCreditChange helper so
-  // the maths matches what the settlement listener writes server-side.
-  const netPnl = useMemo(() => {
-    let total = 0;
-    for (const w of wagers) {
-      if (w.status === 'won' || w.status === 'lost' || w.status === 'void') {
-        total += netCreditChange(w.status, w.stake, w.payout ?? 0);
-      }
-    }
-    return total;
-  }, [wagers]);
+  // Profit across settled wagers (#733): payout minus stake, open wagers
+  // excluded. The shared rule in features/betting/logic/profit.ts, the same
+  // one the Leaderboards Bankroll board reads (wager_leaderboard view).
+  const netPnl = useMemo(() => netProfit(wagers), [wagers]);
 
   const visibleWagers = useMemo(() => {
     if (filter === FILTER_ALL) return wagers;
@@ -222,7 +215,7 @@ export default function Wagers() {
           <StatBlock label="Credits" value={(profile?.credits ?? 0).toLocaleString()} />
           <StatBlock label="Open wagers" value={counts.open.toLocaleString()} />
           <StatBlock label="Settled" value={settled.toLocaleString()} />
-          <StatBlock label="Net P&L" value={signed(netPnl)} valueTone={netPnl > 0 ? 'success' : 'default'} />
+          <StatBlock label="Net P&L" value={formatSignedCredits(netPnl)} valueTone={netPnl > 0 ? 'success' : 'default'} />
         </>
       }
     >
@@ -285,16 +278,6 @@ function Shell({ children, username, meta }: { children: React.ReactNode; userna
       {children}
     </PageShell>
   );
-}
-
-/**
- * Format a credit change with an explicit plus sign when positive.
- *
- * @param value  The credit change.
- * @returns      "+155", "0" or "-20".
- */
-function signed(value: number): string {
-  return value > 0 ? `+${value.toLocaleString()}` : value.toLocaleString();
 }
 
 /**
@@ -380,9 +363,9 @@ function WagerRow({ wager, match }: { wager: Wager; match: LedgerMatch | null })
     ? `${match.home_score ?? 0}\u2013${match.away_score ?? 0}`
     : null;
 
-  const net = wager.status === 'won' || wager.status === 'lost' || wager.status === 'void'
-    ? netCreditChange(wager.status, wager.stake, wager.payout ?? 0)
-    : null;
+  // The wager's profit: +15 for 10 credits won at 2.50, minus the stake for a
+  // loss, 0 for a void, no figure while open.
+  const net = wagerProfit(wager);
 
   return (
     <tr>
@@ -413,12 +396,13 @@ function WagerRow({ wager, match }: { wager: Wager; match: LedgerMatch | null })
         style={{
           ...dataCell('right'),
           fontWeight: 700,
-          // A win's payout is green; a loss, a void refund or zero is plain
-          // text; an open wager has no figure yet (tertiary dash).
+          // A win's profit is green; a loss (minus the stake) or a void (0)
+          // is plain text, never red; an open wager has no figure yet
+          // (tertiary dash).
           color: net === null ? color.textTertiary : wager.status === 'won' && net > 0 ? color.success : color.text,
         }}
       >
-        {net === null ? '\u2014' : signed(net)}
+        {net === null ? '\u2014' : formatSignedCredits(net)}
       </td>
     </tr>
   );

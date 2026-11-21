@@ -13,6 +13,11 @@
 # `focus_enacted` row before mutating), so running it daily — and retrying — is
 # safe: an already-enacted season is a no-op.
 #
+# Each run also sweeps players with no entity (players added on the admin
+# page) and gives them their bio entry, people and persona with the service
+# role (src/features/voting/api/playerEntitySweep.ts). Run it from the Actions
+# tab to provision a just-added player at once instead of waiting a day.
+#
 # REQUIRED SECRETS (add under Settings → Secrets and variables → Actions)
 # ──────────────────────────────────────────────────────────────────────
 #   SUPABASE_URL               Project REST URL (https://<ref>.supabase.co).
@@ -33,7 +38,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'List due seasons without enacting'
+        description: 'List due seasons and players without an entity; write nothing'
         type: boolean
         default: false
 

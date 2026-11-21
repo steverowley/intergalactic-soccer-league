@@ -25,6 +25,13 @@
 // safe to retry; it does not transition the season's status (that, plus the
 // Election Night ceremony, is a separate season-lifecycle concern).
 //
+// PLAYER ENTITY SWEEP
+// ───────────────────
+// Before the season work, every run also gives each player with no entity
+// (players added on the admin page, whose RPC cannot write entities) his
+// entity, people and persona: src/features/voting/api/playerEntitySweep.ts.
+// One read a day; idempotent; `--dry-run` lists who it would provision.
+//
 // HOW TO RUN
 // ──────────
 //   SUPABASE_URL=<url> SUPABASE_SERVICE_ROLE_KEY=<key> \
@@ -51,6 +58,7 @@ import { transitionSeasonStatus } from '../src/features/match';
 // browser bundle. Scripts live outside src/, so the barrel-only import rule
 // doesn't apply here.
 import { rolloverSeason } from '../src/features/match/api/seasonRollover';
+import { sweepPlayerEntities } from '../src/features/voting/api/playerEntitySweep';
 
 // ── Environment ───────────────────────────────────────────────────────────────
 
@@ -113,6 +121,19 @@ const db = createClient<Database>(
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function run(): Promise<void> {
+  // ── Player entity sweep (independent of the season lifecycle) ─────────────
+  // Players added on the admin page get no entity (the browser cannot write
+  // entities, migration 0073), so no bio and no people. Provision every
+  // player with a null entity_id here, with the service role, through the
+  // same provisionPlayerEntity the election paths use. A failure is reported
+  // in the exit code but never stops season enactment below.
+  try {
+    await sweepPlayerEntities(db, { dryRun: DRY_RUN });
+  } catch (err) {
+    console.error('[enact-due-seasons] player entity sweep failed:', err);
+    process.exitCode = 6;
+  }
+
   const { data, error } = await db
     .from('seasons')
     .select('id, status, election_opens_at, ended_at')

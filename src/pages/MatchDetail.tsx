@@ -83,6 +83,7 @@ import {
 import { color, glyph, hairline, numeric, space, tone, type } from '../shared/design';
 import { useAsyncData, withTimeout, isTimeoutError } from '../shared/hooks/useAsyncData';
 import { LIVE_POLL_MS, useVisibleInterval } from '../shared/hooks/useVisibleInterval';
+import { setTimeoutAt } from '../shared/utils/longTimeout';
 
 /** Back link shared by every state of the page. */
 const BACK = { to: '/matches', label: 'All matches' } as const;
@@ -920,12 +921,11 @@ function useKickoffClock(kickoffMs: number | null): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (kickoffMs == null) return undefined;
-    const wait = kickoffMs - Date.now();
-    if (wait <= 0) return undefined;
-    // setTimeout caps at about 24.8 days; a fixture further out re-checks then.
-    const id = setTimeout(() => setNow(Date.now()), Math.min(wait + 250, 2_000_000_000));
-    return () => clearTimeout(id);
-  }, [kickoffMs, now]);
+    if (kickoffMs - Date.now() <= 0) return undefined;
+    // setTimeoutAt waits in bounded steps, so a fixture past setTimeout's
+    // ~24.8 day ceiling still re-renders at kick-off, not at once (#727).
+    return setTimeoutAt(kickoffMs + 250, () => setNow(Date.now()));
+  }, [kickoffMs]);
   return now;
 }
 
@@ -1796,15 +1796,15 @@ function MatchPitchPanel({
 
     let cancelled = false;
     let interval: ReturnType<typeof setInterval> | null = null;
-    let startTimeout: ReturnType<typeof setTimeout> | null = null;
+    let cancelStart: (() => void) | null = null;
     const stop = () => {
       if (interval !== null) {
         clearInterval(interval);
         interval = null;
       }
-      if (startTimeout !== null) {
-        clearTimeout(startTimeout);
-        startTimeout = null;
+      if (cancelStart !== null) {
+        cancelStart();
+        cancelStart = null;
       }
     };
 
@@ -1837,7 +1837,10 @@ function MatchPitchPanel({
     if (now >= windowEndMs) {
       return undefined; // window already closed
     } else if (now < kickoffMs) {
-      startTimeout = setTimeout(begin, kickoffMs - now); // defer until kickoff
+      // Defer until kickoff. A plain setTimeout(begin, kickoffMs - now)
+      // overflowed for fixtures over ~24.8 days away and fired at once,
+      // polling every 5 s for weeks (#727); setTimeoutAt waits in steps.
+      cancelStart = setTimeoutAt(kickoffMs, begin);
     } else {
       begin(); // already in-window
     }

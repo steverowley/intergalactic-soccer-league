@@ -271,7 +271,8 @@ async function applyMutation(db: IslSupabaseClient, mutation: EnactmentMutation)
       // election night replacement so every new player is provisioned the
       // same way (see ./playerEntity.ts). Best-effort: a failed entity insert
       // still returns true so the rest of enactment proceeds; the player
-      // exists and plays, and a later backfill can repair the entity.
+      // exists and plays, and the daily player entity sweep
+      // (./playerEntitySweep.ts) repairs the entity on its next run.
       await provisionPlayerEntity(
         db,
         { ...newPlayer, nationality: null },
