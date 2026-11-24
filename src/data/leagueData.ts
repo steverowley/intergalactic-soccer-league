@@ -510,5 +510,14 @@ export const WORLDS: Record<string, World> = {
   Sedna: { au: 86, color: '#A33A2B', small: true, look: { shades: ['#5A1E16', '#8F3426', '#B85A45'], feature: 'rocky', size: 'moon' } },
 };
 
-/** The home club's training base: a small grey moon near the stadium world. */
+/**
+ * Bodies that appear in the match-day sky but host no club: the Moon over
+ * Earth, Neptune out past Uranus. Real colours, muted like WORLDS.
+ */
+export const SKY_LOOKS: Record<string, WorldLook> = {
+  Moon: { shades: ['#4A4743', '#8A857C', '#BDB8AE'], feature: 'rocky', size: 'moon' },
+  Neptune: { shades: ['#24407F', '#3A62B0', '#6E92D6'], feature: 'haze', size: 'giant' },
+};
+
+/** Grey rock: the ground of the orbital colony's hull and any unknown world. */
 export const TRAINING_MOON: WorldLook = { shades: ['#4A4743', '#7A766F', '#A8A49C'], feature: 'rocky', size: 'minor' };

@@ -16,7 +16,7 @@ describe('MatchJourney', () => {
   afterEach(() => vi.useRealTimers());
 
   it('shows the away ship in flight and the home ship in the hangar mid-journey', () => {
-    const departs = KO - LAND_BEFORE_MS - flightMs('Jupiter', 'Earth');
+    const departs = KO - LAND_BEFORE_MS - flightMs('Jupiter', 'Earth', KO);
     vi.setSystemTime(departs + 10 * 60_000);
     const { getByRole, getAllByText, getByText } = render(
       <MatchJourney home={home} away={away} kickoffMs={KO} ground="Blue Marble Arena" seed="m1" />,

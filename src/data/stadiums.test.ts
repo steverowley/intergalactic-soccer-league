@@ -3,13 +3,14 @@
 
 import { describe, expect, it } from 'vitest';
 import { TEAMS_BY_LEAGUE } from './leagueData';
-import { DEFAULT_STADIUM, groundFor, STADIUMS } from './stadiums';
+import { DEFAULT_STADIUM, groundFor, STADIUMS, TRAINING } from './stadiums';
 
 const teams = Object.values(TEAMS_BY_LEAGUE).flat();
 
 describe('STADIUMS', () => {
   it('gives every club its own ground, and lists no club that does not exist', () => {
     for (const t of teams) expect(STADIUMS[t.id], t.id).toBeDefined();
+    for (const t of teams) expect(TRAINING[t.id], t.id).toBeDefined();
     const ids = new Set(teams.map((t) => t.id));
     for (const id of Object.keys(STADIUMS)) expect(ids.has(id), id).toBe(true);
   });
