@@ -31,6 +31,14 @@ describe('flightMs', () => {
     expect(sednaMercury).toBe(MAX_FLIGHT_MS);
   });
 
+  it('uses the real distance on the day: Mars is a quicker trip at opposition than at conjunction', () => {
+    // Mars opposition (closest) 2027-02-19; conjunction (far side of the Sun) 2028-01-09.
+    const near = flightMs('Mars', 'Earth', Date.UTC(2027, 1, 19));
+    const far = flightMs('Mars', 'Earth', Date.UTC(2028, 0, 9));
+    expect(near).toBeLessThan(far);
+    expect(near).toBeLessThan(2 * HOUR);
+  });
+
   it('is the same both ways, a crossing for a derby, and lands on five-minute marks', () => {
     expect(flightMs('Mars', 'Earth')).toBe(flightMs('Earth', 'Mars'));
     expect(flightMs('Mars', 'Mars')).toBe(DERBY_FLIGHT_MS);
@@ -48,7 +56,7 @@ describe('matchJourney', () => {
   it('lands the away ship half an hour before kick-off, the home ship first', () => {
     const j = matchJourney('Earth', 'Mars', KO);
     expect(j.away).toMatchObject({ from: 'Mars', to: 'Earth', arriveMs: KO - LAND_BEFORE_MS });
-    expect(j.away.departMs).toBe(KO - LAND_BEFORE_MS - flightMs('Mars', 'Earth'));
+    expect(j.away.departMs).toBe(KO - LAND_BEFORE_MS - flightMs('Mars', 'Earth', KO));
     expect(j.home).toMatchObject({ from: 'Earth training base', arriveMs: KO - HOME_LAND_BEFORE_MS });
     expect(j.home.arriveMs - j.home.departMs).toBe(HOME_HOP_MS);
     expect(j.home.arriveMs).toBeLessThan(j.away.arriveMs);

@@ -91,12 +91,57 @@ export const STADIUMS: Record<string, StadiumLook> = {
 /** A ground with no entry: a plain bowl. */
 export const DEFAULT_STADIUM: StadiumLook = { style: 'cradle', line: '', why: 'fallback' };
 
+/** How well kitted out a club's training facility is (the lore's tiers). */
+export type TrainingQuality = 'elite' | 'professional' | 'standard' | 'basic';
+
+/**
+ * Each club's training facility, from the lore (the training_facility
+ * entities, migration 0063): on the club's own world, so the home ship hops
+ * over from it on match day.
+ */
+export const TRAINING: Record<string, { name: string; quality: TrainingQuality }> = {
+  "mercury-runners": { name: "Sunrunner Complex", quality: 'elite' },
+  "earth-united": { name: "Kingswood Academy", quality: 'elite' },
+  "venus-volcanic": { name: "Volcanic Edge", quality: 'professional' },
+  "terra-nova": { name: "Greenhouse Centre", quality: 'professional' },
+  "mars-athletic": { name: "Red Dust Grounds", quality: 'professional' },
+  "olympus-mons": { name: "High Peak Centre", quality: 'elite' },
+  "valles-mariners": { name: "Canyon Drills", quality: 'professional' },
+  "solar-city": { name: "Zero-G Dome", quality: 'elite' },
+  "jupiter-titans": { name: "Storm Belt Campus", quality: 'elite' },
+  "europa-oceanic": { name: "Subsurface Institute", quality: 'professional' },
+  "ganymede-united": { name: "Cradle Academy", quality: 'professional' },
+  "callisto-wolves": { name: "Tundra Centre", quality: 'standard' },
+  "saturn-rings": { name: "Ring-Side Complex", quality: 'professional' },
+  "titan-methane": { name: "Hydrocarbon Campus", quality: 'professional' },
+  "enceladus-geysers": { name: "Geyser Grounds", quality: 'standard' },
+  "uranus-sidewinders": { name: "Sideways Institute", quality: 'professional' },
+  "ceres-miners": { name: "Ceres Deep Complex", quality: 'standard' },
+  vesta: { name: "Vesta Centre", quality: 'standard' },
+  "pallas-wanderers": { name: "Nomad Grounds", quality: 'basic' },
+  "hygiea-united": { name: "Dark Pitch Academy", quality: 'basic' },
+  "psyche-metallics": { name: "Core Campus", quality: 'standard' },
+  "juno-city": { name: "Juno Temple Grounds", quality: 'standard' },
+  beltway: { name: "Junction Academy", quality: 'standard' },
+  "solar-miners": { name: "Extraction Campus", quality: 'basic' },
+  "pluto-frost": { name: "Frost Academy", quality: 'standard' },
+  "charon-united": { name: "Binary Complex", quality: 'basic' },
+  "eris-wanderers": { name: "Long Road Grounds", quality: 'basic' },
+  "haumea-spinners": { name: "Oval Centre", quality: 'basic' },
+  makemake: { name: "Creation Academy", quality: 'basic' },
+  "orcus-athletic": { name: "The Pit Complex", quality: 'basic' },
+  "sedna-mariners": { name: "Perihelion Grounds", quality: 'basic' },
+  "scattered-disc": { name: "Scatter Academy", quality: 'basic' },
+};
+
 /** A club's ground: its look, name, nickname and seats. */
 export interface Ground {
   look: StadiumLook;
   name: string | null;
   nickname: string | null;
   capacity: number;
+  /** The club's training facility (null when the lore has none). */
+  training: { name: string; quality: TrainingQuality } | null;
 }
 
 /**
@@ -113,5 +158,6 @@ export function groundFor(teamId: string | null | undefined): Ground {
     name: name?.trim() || null,
     nickname: nick ? nick.replace(/"/g, '').trim() : null,
     capacity: Number((team?.capacity ?? '30000').replace(/[^0-9]/g, '')) || 30_000,
+    training: (teamId && TRAINING[teamId]) || null,
   };
 }

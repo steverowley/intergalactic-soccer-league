@@ -26,7 +26,7 @@ import { formatSpan, legState, legStatus, matchJourney, worldOf, type Leg } from
 import { resolveKits } from '../../logic/viewer';
 import { PIXEL_SCALE } from '../viewer/render';
 import { groundFor } from '../../../../data/stadiums';
-import { ART, drawJourney, sceneGeometry, starfield } from './journeyArt';
+import { ART, drawJourney, horizonY, journeyLayout, starfield } from './journeyArt';
 import { placeLabel, type Box } from './labelPlacement';
 
 export { starfield } from './journeyArt';
@@ -65,7 +65,7 @@ export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }
   const reducedMotion = useReducedMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const journey = useMemo(() => matchJourney(home.location, away.location, kickoffMs), [home.location, away.location, kickoffMs]);
+
   const kits = useMemo(() => resolveKits(home.color, away.color), [home.color, away.color]);
   const stars = useMemo(() => starfield(seed, 70), [seed]);
   const clock = (ms: number) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -74,11 +74,38 @@ export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }
   const awayWorld = worldOf(away.location);
   const derby = stadiumWorld.name === awayWorld.name;
   const ground = useMemo(() => groundFor(home.id), [home.id]);
-  const geometry = useMemo(() => sceneGeometry(awayWorld.look, ground.look.style, ground.capacity), [awayWorld.look, ground]);
-  const labels = [
-    { key: 'away', text: derby ? `${awayWorld.name}, far side` : awayWorld.name, target: geometry.away, order: ['above', 'right', 'below', 'left'] as const },
-    { key: 'base', text: 'Training base', target: geometry.base, order: ['left', 'below', 'above'] as const },
-    { key: 'ground', text: stadiumWorld.name, target: geometry.ground, order: ['above', 'left', 'right'] as const },
+  const journey = useMemo(
+    () => matchJourney(home.location, away.location, kickoffMs, ground.training?.name),
+    [home.location, away.location, kickoffMs, ground],
+  );
+  // The real sky on the day, and everything placed from it.
+  const layout = useMemo(
+    () => journeyLayout(stadiumWorld.name, awayWorld.name, kickoffMs, ground.look.style, ground.capacity),
+    [stadiumWorld.name, awayWorld.name, kickoffMs, ground],
+  );
+  const geometry = useMemo(
+    () => ({
+      obstacles: [
+        ...layout.boxes.sky.map((b) => b.box),
+        layout.boxes.base,
+        layout.boxes.ground,
+        ...layout.boxes.ships,
+      ],
+      horizon: horizonY,
+    }),
+    [layout],
+  );
+  const sideOrder = ['above', 'below', 'right', 'left'] as const;
+  const labels: SceneLabelSpec[] = [
+    ...(layout.boxes.away
+      ? [{ key: 'away', text: awayWorld.name, target: layout.boxes.away, order: sideOrder }]
+      : [{ key: 'away', text: `${awayWorld.name}, far side`, target: layout.boxes.ships[0]!, order: ['above', 'left'] as const }]),
+    { key: 'base', text: ground.training?.name ?? 'Training ground', target: layout.boxes.base, order: ['above', 'right'] as const },
+    { key: 'ground', text: stadiumWorld.name, target: layout.boxes.ground, order: ['above', 'right', 'left'] as const },
+    // The Sun and the other worlds are named when there is clear room.
+    ...layout.boxes.sky
+      .filter((b) => b.kind !== 'away')
+      .map((b) => ({ key: `sky-${b.name}`, text: b.name === 'Largest Orbital Colony' ? 'Orbital Colony' : b.name, target: b.box, order: sideOrder, optional: true })),
   ];
   const frameRef = useRef<HTMLDivElement>(null);
   const placed = useLabelLayout(frameRef, labels, geometry);
@@ -97,8 +124,9 @@ export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }
         home: { kit: kits.home.outfield, ...homeState },
         homeKit: kits.home.outfield,
         stadium: { style: ground.look.style, capacity: ground.capacity },
-        awayLook: awayWorld.look,
         homeLook: stadiumWorld.look,
+        layout,
+        training: ground.training?.quality ?? 'standard',
         stars,
         t,
       });
@@ -119,7 +147,7 @@ export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }
     return () => cancelAnimationFrame(raf);
     // The states are re-derived each second; their fields are the real inputs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kits, awayState.phase, awayState.progress, homeState.phase, homeState.progress, awayWorld.look, stadiumWorld.look, ground, stars, reducedMotion]);
+  }, [kits, awayState.phase, awayState.progress, homeState.phase, homeState.progress, stadiumWorld.look, layout, ground, stars, reducedMotion]);
 
   const label = `${away.name}: ${legStatus(journey.away, now, clock)}. ${home.name}: ${legStatus(journey.home, now, clock)}.`;
 
@@ -158,9 +186,9 @@ export function MatchJourney({ home, away, kickoffMs, ground: groundName, seed }
           aria-label={label}
           style={{ width: '100%', height: '100%', display: 'block', imageRendering: 'pixelated' }}
         />
-        {labels.map((l) => (
-          <SceneLabel key={l.key} name={l.key} text={l.text} at={placed[l.key]} />
-        ))}
+        {labels.map((l) =>
+          placed[l.key] === null ? null : <SceneLabel key={l.key} name={l.key} text={l.text} at={placed[l.key] ?? undefined} />,
+        )}
       </div>
 
       {/* The ground, in the lore's own words. */}
@@ -210,12 +238,22 @@ const LABEL_GAP = 8;
  * then place them one by one (labelPlacement.ts), each placed label becoming
  * an obstacle for the next. Re-runs when the frame is resized.
  */
+/** A label for the scene: what it names, where to try, and whether it may be left out. */
+interface SceneLabelSpec {
+  key: string;
+  text: string;
+  target: Box;
+  order: ReadonlyArray<'above' | 'below' | 'left' | 'right'>;
+  /** Left out (null) when it has no clean spot. */
+  optional?: boolean;
+}
+
 function useLabelLayout(
   frameRef: React.RefObject<HTMLDivElement | null>,
-  labels: ReadonlyArray<{ key: string; text: string; target: Box; order: ReadonlyArray<'above' | 'below' | 'left' | 'right'> }>,
+  labels: readonly SceneLabelSpec[],
   geometry: { obstacles: readonly Box[]; horizon: (x: number) => number },
-): Record<string, { x: number; y: number }> {
-  const [placed, setPlaced] = useState<Record<string, { x: number; y: number }>>({});
+): Record<string, { x: number; y: number } | null> {
+  const [placed, setPlaced] = useState<Record<string, { x: number; y: number } | null>>({});
   const signature = labels.map((l) => `${l.key}:${l.text}`).join('|');
   useLayoutEffect(() => {
     const frame = frameRef.current;
@@ -226,7 +264,7 @@ function useLabelLayout(
       const k = fw / ART.w;
       const scale = (b: Box): Box => ({ x: b.x * k, y: b.y * k, w: b.w * k, h: b.h * k });
       const obstacles = geometry.obstacles.map(scale);
-      const next: Record<string, { x: number; y: number }> = {};
+      const next: Record<string, { x: number; y: number } | null> = {};
       for (const l of labels) {
         const el = frame.querySelector<HTMLElement>(`[data-scene-label="${l.key}"]`);
         if (!el) continue;
@@ -241,7 +279,11 @@ function useLabelLayout(
           obstacles,
           horizon: (x) => geometry.horizon(x / k) * k,
         });
-        next[l.key] = p;
+        if (l.optional && p.cost > 0) {
+          next[l.key] = null;
+          continue;
+        }
+        next[l.key] = { x: p.x, y: p.y };
         obstacles.push({ x: p.x, y: p.y, w: size.w, h: size.h });
       }
       setPlaced(next);

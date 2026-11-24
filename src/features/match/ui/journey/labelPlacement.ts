@@ -51,9 +51,10 @@ function grow(b: Box, g: number): Box {
 /**
  * Place one label.
  *
- * @returns Its top-left corner in frame pixels.
+ * @returns Its top-left corner in frame pixels, and the spot's cost (0 when
+ *          it has all the room it should).
  */
-export function placeLabel(o: PlaceOptions): { x: number; y: number } {
+export function placeLabel(o: PlaceOptions): { x: number; y: number; cost: number } {
   const { size, target: t, frame, margin, gap } = o;
   const clampX = (x: number) => Math.min(Math.max(x, margin), frame.w - margin - size.w);
   const clampY = (y: number) => Math.min(Math.max(y, margin), frame.h - margin - size.h);
@@ -87,11 +88,11 @@ export function placeLabel(o: PlaceOptions): { x: number; y: number } {
   for (const side of o.order) {
     const p = spot(side);
     const c = cost(p);
-    if (c === 0) return p;
+    if (c === 0) return { ...p, cost: 0 };
     if (c < bestCost) {
       best = p;
       bestCost = c;
     }
   }
-  return { x: clampX(best.x), y: clampY(best.y) };
+  return { x: clampX(best.x), y: clampY(best.y), cost: bestCost };
 }

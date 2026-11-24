@@ -10,15 +10,16 @@
 // further along:
 //
 //   away ship   leaves its home world early enough to land LAND_BEFORE_MS
-//               before kick-off. Flight time grows with distance (log of the
-//               orbital gap, so Mars to Earth is under two hours and Sedna
-//               to Mercury is the longest trip in the league, capped).
+//               before kick-off. Flight time grows with the real distance
+//               between the two worlds on the day (orbits.ts; log scale,
+//               capped), so a trip to Mars is quicker when Mars is near.
 //   home ship   a short hop from the club's training base, landing first.
 //   derby       two clubs on one world: the away side crosses the planet.
 //
 // No randomness: the same fixture always flies the same timetable.
 
 import { WORLDS, type World } from '../../../data/leagueData';
+import { distanceAu } from './orbits';
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -46,13 +47,17 @@ export function worldOf(location: string | null | undefined): World & { name: st
 /**
  * Flight time between two worlds.
  *
+ * @param atMs  When (kick-off): uses the worlds' real distance that day.
  * @returns Milliseconds, rounded to five minutes.
  */
-export function flightMs(from: string | null | undefined, to: string | null | undefined): number {
+export function flightMs(from: string | null | undefined, to: string | null | undefined, atMs?: number): number {
   const a = worldOf(from);
   const b = worldOf(to);
   if (a.name === b.name) return DERBY_FLIGHT_MS;
-  const hours = 1 + 1.6 * Math.log(1 + Math.abs(a.au - b.au));
+  // The real distance on the day when we know it; the orbits' gap otherwise.
+  const real = atMs == null ? null : distanceAu(a.name, b.name, atMs);
+  const gap = real ?? Math.abs(a.au - b.au);
+  const hours = 1 + 1.6 * Math.log(1 + gap);
   const ms = Math.min(MAX_FLIGHT_MS, hours * HOUR);
   return Math.round(ms / (5 * MIN)) * 5 * MIN;
 }
@@ -75,18 +80,23 @@ export interface Leg {
  * @param awayLocation  The away club's world.
  * @param kickoffMs     Kick-off, epoch ms.
  */
-export function matchJourney(homeLocation: string | null | undefined, awayLocation: string | null | undefined, kickoffMs: number): { home: Leg; away: Leg } {
+export function matchJourney(
+  homeLocation: string | null | undefined,
+  awayLocation: string | null | undefined,
+  kickoffMs: number,
+  homeBase?: string | null,
+): { home: Leg; away: Leg } {
   const to = worldOf(homeLocation).name;
   const awayFrom = worldOf(awayLocation).name;
   const awayArrive = kickoffMs - LAND_BEFORE_MS;
   const homeArrive = kickoffMs - HOME_LAND_BEFORE_MS;
   return {
-    home: { side: 'home', from: `${to} training base`, to, departMs: homeArrive - HOME_HOP_MS, arriveMs: homeArrive },
+    home: { side: 'home', from: homeBase ?? `${to} training base`, to, departMs: homeArrive - HOME_HOP_MS, arriveMs: homeArrive },
     away: {
       side: 'away',
       from: awayFrom === to ? `${awayFrom}, far side` : awayFrom,
       to,
-      departMs: awayArrive - flightMs(awayLocation, homeLocation),
+      departMs: awayArrive - flightMs(awayLocation, homeLocation, kickoffMs),
       arriveMs: awayArrive,
     },
   };

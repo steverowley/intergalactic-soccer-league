@@ -18,7 +18,7 @@ const base: PlaceOptions = {
 
 describe('placeLabel', () => {
   it('takes the first spot with room: above the target, centred, a gap clear', () => {
-    expect(placeLabel(base)).toEqual({ x: 90, y: 78 });
+    expect(placeLabel(base)).toEqual({ x: 90, y: 78, cost: 0 });
   });
 
   it('slides along to keep the margin from the frame edge', () => {

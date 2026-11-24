@@ -8,16 +8,24 @@
 // solar system"): Jupiter's belts and Great Red Spot, Saturn's and Uranus'
 // rings, Earth's oceans, continents and caps, Mars' rust and polar caps,
 // Europa's cracked ice, Titan's haze, Enceladus' tiger stripes, Pluto's
-// heart, lumpy asteroids, an orbital ring station. Sizes follow the real
-// scale class (giant, planet, moon, minor body). The looks live in
-// data/leagueData.ts (world data). The team ships are pixel buses in their
-// club's match kit; the stadium is a stand in the home kit on the surface.
+// heart, lumpy asteroids, an orbital ring station. The looks live in
+// data/leagueData.ts (world data).
 //
-// The worlds are static, so they are drawn once into an offscreen layer per
-// fixture; each animation frame copies that and adds the moving parts.
+// And the sky is the real one on the day (owner, 2026-11-16: "real
+// positional planets"): logic/sky.ts places the Sun, the planets and the away
+// club's world where they actually are as seen from the home ground, sized
+// by their real apparent size and lit at their real phase, so every fixture
+// has its own sky. The away ship sets off from beside the away world; the
+// home ship hops over the horizon from the club's own training facility (the
+// lore's, data/stadiums.ts), drawn to its quality tier.
+//
+// The sky and ground are static for a fixture, so they are drawn once into
+// an offscreen layer; each animation frame copies that and adds the moving
+// parts.
 
-import { TRAINING_MOON, WORLDS, type WorldLook } from '../../../../data/leagueData';
-import type { StadiumStyle } from '../../../../data/stadiums';
+import { SKY_LOOKS, TRAINING_MOON, WORLDS, type WorldLook } from '../../../../data/leagueData';
+import type { StadiumStyle, TrainingQuality } from '../../../../data/stadiums';
+import { skyScene, type SkyBody } from '../../logic/sky';
 import { deckLift, drawStadium, skyBody, stadiumExtent } from './stadiumArt';
 import { canvasColor } from '../../../../shared/design';
 import type { Kit } from '../../logic/viewer';
@@ -43,9 +51,12 @@ export interface JourneyFrame {
   homeKit: Kit;
   /** The home club's ground (data/stadiums.ts) and its seats. */
   stadium: { style: StadiumStyle; capacity: number };
-  /** The away club's world and the stadium (home) world. */
-  awayLook: WorldLook;
+  /** The stadium (home) world. */
   homeLook: WorldLook;
+  /** The scene's real sky and everything placed from it (journeyLayout). */
+  layout: JourneyLayout;
+  /** The home club's training facility tier. */
+  training: TrainingQuality;
   /** Fixed stars for this fixture, in art pixels. */
   stars: ReadonlyArray<{ x: number; y: number; o: number }>;
   /** Animation time, ms (0 under reduced motion). */
@@ -56,29 +67,22 @@ export interface JourneyFrame {
 
 /**
  * The stadium world, seen on arrival: a wide, gently curving horizon along
- * the bottom of the scene, nearly level under the ground, so the stand and
- * the parked ships stand on land rather than on the crest of a ball.
+ * the bottom of the scene, nearly level, so the grounds and the parked ships
+ * stand on land.
  */
-const STADIUM_WORLD = { cx: 240, cy: 760, r: 600 };
-/** The home club's training base: a small moon top right. */
-const BASE = { cx: 286, cy: 40, r: 7 };
-/**
- * Where the ground sits: near the top of the stadium world, where the
- * horizon is flattest, so the whole stand sits on the surface.
- */
-const GROUND_X = 256;
+const STADIUM_WORLD = { cx: 160, cy: 760, r: 600 };
+/** Where the ground stands. */
+const GROUND_X = 224;
+/** Where the club's training facility stands, over to the left. */
+const BASE_X = 54;
+/** Space kept from the frame's edges. */
+const PAD = 14;
 
-/** Drawn radius per size class, after the real bodies' scale. */
+/** Drawn radius per size class (the shelf's world gallery). */
 const SIZE_R: Record<WorldLook['size'], number> = { giant: 26, planet: 19, moon: 13, minor: 10 };
 
-/** The away world, low left. */
-export function awayWorld(size: WorldLook['size']) {
-  const r = SIZE_R[size];
-  return { cx: 52, cy: 146, r };
-}
-
 /** Surface height of the stadium world at column x. */
-function horizonY(x: number): number {
+export function horizonY(x: number): number {
   const { cx, cy, r } = STADIUM_WORLD;
   const dx = x - cx;
   return cy - Math.sqrt(Math.max(0, r * r - dx * dx));
@@ -92,35 +96,6 @@ export interface ArtBox {
   h: number;
 }
 
-/**
- * What the scene's labels name and must keep clear of, in art pixels: the
- * away world, the training base, the ground, and the ships' resting spots.
- */
-export function sceneGeometry(awayLook: WorldLook, style: StadiumStyle, capacity: number) {
-  const w = awayWorld(awayLook.size);
-  const ringed = awayLook.ring ? 1.95 : awayLook.feature === 'ellipsoid' ? 1.55 : 1;
-  const ext = stadiumExtent(style, capacity);
-  const top = horizonY(GROUND_X) - ext.up;
-  const r = routes(awayLook.size, style);
-  const ship = (p: Pt): ArtBox => ({ x: p.x - 14, y: p.y - 7, w: 28, h: 14 });
-  const sky = skyBody(style);
-  return {
-    away: { x: w.cx - w.r * ringed, y: w.cy - w.r, w: w.r * ringed * 2, h: w.r * 2 },
-    base: { x: BASE.cx - BASE.r, y: BASE.cy - BASE.r, w: BASE.r * 2, h: BASE.r * 2 },
-    ground: { x: GROUND_X - ext.half, y: top, w: ext.half * 2, h: horizonY(GROUND_X) - top },
-    obstacles: [
-      ship(r.away.dock),
-      ship(r.away.park),
-      ship(r.home.dock),
-      ship(r.home.park),
-      ...(sky ? [{ x: GROUND_X - 34 - 16, y: 92 - 16, w: 32, h: 32 }] : []),
-    ],
-    horizon: horizonY,
-  };
-}
-
-// ── Routes ──────────────────────────────────────────────────────────────────
-
 type Pt = { x: number; y: number };
 
 function quad(a: Pt, c: Pt, b: Pt) {
@@ -130,22 +105,99 @@ function quad(a: Pt, c: Pt, b: Pt) {
   };
 }
 
-/** The two routes and the ships' rest points (sprite centres). */
+/** One ship's way: the route, where it waits and where it lands. */
+export interface Way {
+  at: (t: number) => Pt;
+  dock: Pt;
+  park: Pt;
+}
+
+/** Everything placed for one fixture. */
+export interface JourneyLayout {
+  /** Bodies in the sky, farthest first. */
+  sky: SkyBody[];
+  /** The away world in the sky (null for a derby). */
+  awayBody: SkyBody | null;
+  away: Way;
+  home: Way;
+  /** Training facility position on the horizon. */
+  base: Pt;
+  /** Label targets and things labels keep clear of. */
+  boxes: { away: ArtBox | null; base: ArtBox; ground: ArtBox; sky: Array<{ name: string; box: ArtBox; kind: SkyBody['kind'] }>; ships: ArtBox[] };
+}
+
 /** Grounds with no surface under them: the ships park at deck height. */
 const FLOATING: readonly StadiumStyle[] = ['storm', 'tilted', 'colosseum'];
 
-function routes(size: WorldLook['size'], style: StadiumStyle) {
+/** How far a body's drawing reaches either side (rings, Haumea's stretch). */
+function reach(name: string, r: number): number {
+  const look = lookFor(name);
+  return look?.ring ? r * 1.95 : look?.feature === 'ellipsoid' ? r * 1.55 : r;
+}
+
+/**
+ * Place everything for a fixture from the real sky.
+ *
+ * @param home   Home club's location.
+ * @param away   Away club's location.
+ * @param ms     When (kick-off).
+ * @param style  The home ground, for its height and deck.
+ */
+export function journeyLayout(home: string, away: string, ms: number, style: StadiumStyle, capacity: number): JourneyLayout {
+  const { bodies, away: awayBody } = skyScene(home, away, ms, { width: ART.w, horizon: horizonY, pad: PAD });
   const deck = FLOATING.includes(style) ? deckLift(style) : 0;
-  const w = awayWorld(size);
-  const gy = horizonY(GROUND_X);
-  const awayDock = { x: w.cx + w.r * 1.3 + 16, y: w.cy - 4 };
-  const awayPark = { x: GROUND_X - 46, y: horizonY(GROUND_X - 46) - 6 - deck };
-  const homeDock = { x: BASE.cx - 22, y: BASE.cy + 2 };
-  const homePark = { x: GROUND_X + 44, y: horizonY(GROUND_X + 44) - 6 - deck };
+  const parkAt = (x: number): Pt => ({ x, y: horizonY(x) - 6 - deck });
+
+  // The away ship waits beside its world, on the side facing the ground; a
+  // derby visitor comes over the far horizon.
+  let awayDock: Pt;
+  if (awayBody) {
+    const toward = Math.sign(GROUND_X - awayBody.x) || -1;
+    const gap = reach(awayBody.name, awayBody.r) + 16;
+    let x = awayBody.x + toward * gap;
+    if (x < PAD + 12 || x > ART.w - PAD - 12) x = awayBody.x - toward * gap;
+    awayDock = { x: Math.min(Math.max(x, PAD + 12), ART.w - PAD - 12), y: awayBody.y };
+  } else {
+    awayDock = { x: ART.w - PAD - 12, y: horizonY(ART.w - PAD - 12) - 6 };
+  }
+  // It lands on the side of the ground it waits on, so it never crosses its
+  // own world; the home ship takes the other side.
+  const side = awayDock.x > GROUND_X ? 1 : -1;
+  const awayPark = parkAt(GROUND_X + side * 46);
+  const homePark = parkAt(GROUND_X - side * 44);
+  const base = { x: BASE_X, y: horizonY(BASE_X) };
+  const homeDock = { x: BASE_X + 26, y: horizonY(BASE_X + 26) - 6 - (FLOATING.includes(style) ? 8 : 0) };
+  const arcTop = (a: Pt, b: Pt, lift: number): Pt => ({ x: (a.x + b.x) / 2, y: Math.max(PAD, Math.min(a.y, b.y) - lift) });
+
+  const ext = stadiumExtent(style, capacity);
+  const gTop = horizonY(GROUND_X) - ext.up;
+  const shipBox = (p: Pt): ArtBox => ({ x: p.x - 14, y: p.y - 7, w: 28, h: 14 });
   return {
-    away: { at: quad(awayDock, { x: 140, y: 6 }, awayPark), dock: awayDock, park: awayPark },
-    home: { at: quad(homeDock, { x: GROUND_X + 56, y: gy - 50 }, homePark), dock: homeDock, park: homePark },
+    sky: bodies,
+    awayBody,
+    // The away ship comes in on a descent: out from its world, then down to
+    // the ground, never looping up through the sky. A derby visitor hops
+    // over the horizon.
+    away: {
+      at: quad(awayDock, awayBody ? { x: awayPark.x, y: awayDock.y } : arcTop(awayDock, awayPark, 34), awayPark),
+      dock: awayDock,
+      park: awayPark,
+    },
+    home: { at: quad(homeDock, arcTop(homeDock, homePark, 34), homePark), dock: homeDock, park: homePark },
+    base,
+    boxes: {
+      away: awayBody ? { x: awayBody.x - reach(awayBody.name, awayBody.r), y: awayBody.y - awayBody.r, w: reach(awayBody.name, awayBody.r) * 2, h: awayBody.r * 2 } : null,
+      base: { x: BASE_X - 16, y: base.y - 22, w: 32, h: 22 },
+      ground: { x: GROUND_X - ext.half, y: gTop, w: ext.half * 2, h: horizonY(GROUND_X) - gTop },
+      sky: bodies.map((b) => ({ name: b.name, kind: b.kind, box: { x: b.x - reach(b.name, b.r), y: b.y - b.r, w: reach(b.name, b.r) * 2, h: b.r * 2 } })),
+      ships: [shipBox(awayDock), shipBox(awayPark), shipBox(homeDock), shipBox(homePark)],
+    },
   };
+}
+
+/** The look for a body in the sky (club worlds, then the Moon and Neptune). */
+export function lookFor(name: string): WorldLook | undefined {
+  return WORLDS[name]?.look ?? SKY_LOOKS[name];
 }
 
 // ── Noise ───────────────────────────────────────────────────────────────────
@@ -164,16 +216,30 @@ function noise(x: number, y: number, seed: number): number {
   return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
 }
 
+/** Light from the upper left (the shelf's galleries and the near world). */
+const DEFAULT_LIGHT = { x: -0.55, y: -0.65, z: 0.5 };
+
 // ── Worlds ──────────────────────────────────────────────────────────────────
 
 /**
- * A world as its real body: a lit disc (upper-left sun) in its three shades
+ * A world as its real body: a disc lit from the Sun's side in its three shades
  * with a dithered terminator, then its surface feature.
  *
  * @param dim  Darkens the lighting (the near stadium world, so the stand is
  *             the brightest thing on it).
+ * @param sun  Unit direction of the light (screen x, screen y down, toward
+ *             the viewer): the real phase in the sky.
  */
-function drawBody(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, look: WorldLook, seed: number, dim = 0) {
+function drawBody(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  r: number,
+  look: WorldLook,
+  seed: number,
+  dim = 0,
+  sun: { x: number; y: number; z: number } = DEFAULT_LIGHT,
+) {
   if (look.feature === 'station') return drawStation(ctx, cx, cy, r, look);
   const [night, day, lit] = look.shades;
   const f = look.feature;
@@ -197,7 +263,7 @@ function drawBody(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: numb
       const d2 = dx * dx + dy * dy;
       if (d2 >= edge * edge) continue;
       const dz = Math.sqrt(Math.max(0, 1 - d2 / (edge * edge)));
-      const light = -0.55 * dx - 0.65 * dy + 0.5 * dz - dim;
+      const light = sun.x * dx + sun.y * dy + sun.z * dz - dim;
       const even = (x + y) % 2 === 0;
       // 0 night, 1 day, 2 lit; the two bands between are dithered.
       let tone = light > 0.8 ? 2 : light > 0.7 ? (even ? 2 : 1) : light > 0.3 ? 1 : light > 0.14 ? (even ? 1 : 0) : 0;
@@ -391,6 +457,58 @@ export function drawGroundTile(ctx: CanvasRenderingContext2D, style: StadiumStyl
   drawStadium({ ctx, gx: w / 2, surf, kit, world: look, capacity, t }, style);
 }
 
+/** The Sun: a white core in Lunar Dust rings, smaller the farther out. */
+function drawSun(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  for (let k = 3; k >= 1; k--) {
+    const rr = r + k * 2;
+    for (let yy = Math.floor(y - rr); yy <= Math.ceil(y + rr); yy++) {
+      for (let xx = Math.floor(x - rr); xx <= Math.ceil(x + rr); xx++) {
+        const d = Math.hypot(xx + 0.5 - x, yy + 0.5 - y);
+        if (d <= rr && d > r && (xx + yy + k) % (k + 1) === 0) px(ctx, xx, yy, 1, 1, canvasColor.figureDark);
+      }
+    }
+  }
+  pixelEllipse(ctx, x, y, r, r, canvasColor.text);
+  pixelEllipse(ctx, x, y, Math.max(1, r - 2), Math.max(1, r - 2), canvasColor.figureGlow);
+}
+
+/**
+ * The club's training facility on its own world, drawn to its lore tier:
+ * elite a lit dome and mast, professional a block and pitch, standard a
+ * shed and pitch, basic a hut beside a marked-out patch. Floats on a small
+ * deck where the world has no ground.
+ */
+function drawTrainingBase(ctx: CanvasRenderingContext2D, x: number, kit: Kit, quality: TrainingQuality, floating: boolean, t: number) {
+  const y = Math.round(horizonY(x)) - (floating ? 8 : 0);
+  if (floating) {
+    pixelEllipse(ctx, x, y + 2, 18, 2, canvasColor.figureMid);
+    px(ctx, x - 1, y + 4, 3, 2 + (t === 0 ? 1 : Math.floor(t / 90) % 3), canvasColor.figureGlow);
+  }
+  // The training pitch.
+  px(ctx, x - 14, y - 2, 28, 2, quality === 'basic' ? canvasColor.figureMid : canvasColor.text);
+  px(ctx, x, y - 2, 1, 2, canvasColor.figureMid);
+  if (quality === 'elite') {
+    for (let a = 0; a <= 12; a++) {
+      const th = Math.PI - (Math.PI * a) / 12;
+      px(ctx, Math.round(x + 8 + Math.cos(th) * 7), Math.round(y - 2 - Math.sin(th) * 7), 1, 1, canvasColor.figureLight);
+    }
+    px(ctx, x + 2, y - 4, 13, 2, kit.shirt);
+    px(ctx, x - 12, y - 16, 1, 14, canvasColor.figureMid);
+    px(ctx, x - 13, y - 17, 3, 1, t === 0 || Math.floor(t / 600) % 2 === 0 ? canvasColor.figureGlow : canvasColor.figureDark);
+  } else if (quality === 'professional') {
+    px(ctx, x + 2, y - 9, 12, 7, kit.outline);
+    px(ctx, x + 3, y - 8, 10, 5, kit.shirt);
+    px(ctx, x + 4, y - 6, 8, 1, canvasColor.text);
+  } else if (quality === 'standard') {
+    px(ctx, x + 4, y - 6, 8, 4, kit.outline);
+    px(ctx, x + 5, y - 5, 6, 2, kit.shirt);
+    px(ctx, x + 3, y - 7, 10, 1, canvasColor.figureMid);
+  } else {
+    for (let i = 0; i < 4; i++) px(ctx, x + 6 - i, y - 3 - i, 2 + i * 2, 1, i === 0 ? kit.outline : kit.shirt);
+    for (let i = -12; i <= 12; i += 6) px(ctx, x + i, y - 3, 1, 1, canvasColor.figureLight);
+  }
+}
+
 // ── Sprites ─────────────────────────────────────────────────────────────────
 
 /**
@@ -414,8 +532,10 @@ const SHIP_W = SHIP[0]!.length;
 const SHIP_H = SHIP.length;
 
 /** Draw a ship with its centre at (cx, cy). */
-function drawShip(ctx: CanvasRenderingContext2D, cx: number, cy: number, kit: Kit, flying: boolean, t: number, seed: number) {
+function drawShip(ctx: CanvasRenderingContext2D, cx: number, cy: number, kit: Kit, flying: boolean, t: number, seed: number, left = false) {
   const x0 = Math.round(cx - SHIP_W / 2);
+  // Facing left: mirror each column about the sprite's centre.
+  const col = (c: number) => (left ? SHIP_W - 1 - c : c);
   const bob = flying ? (Math.sin(t / 380 + seed) > 0 ? 0 : 1) : 0;
   const y0 = Math.round(cy - SHIP_H / 2) + bob;
   const pal: Record<string, string> = {
@@ -433,16 +553,18 @@ function drawShip(ctx: CanvasRenderingContext2D, cx: number, cy: number, kit: Ki
     // Skids only on the ground; in flight the gear is up.
     if (flying && r >= SHIP_H - 2) continue;
     for (let c = 0; c < SHIP_W; c++) {
-      const col = pal[row[c]!];
-      if (col) px(ctx, x0 + c, y0 + r, 1, 1, col);
+      const colour = pal[row[c]!];
+      if (colour) px(ctx, x0 + col(c), y0 + r, 1, 1, colour);
     }
   }
   if (flying) {
     // Engine: a flickering pixel flame off the tail.
     const len = 3 + (Math.floor(t / 90 + seed * 7) % 3);
-    px(ctx, x0 - len, y0 + 4, len, 2, canvasColor.text);
-    px(ctx, x0 - 2, y0 + 4, 2, 2, canvasColor.figureGlow);
-    px(ctx, x0 - len - 2, y0 + 4 + (Math.floor(t / 120) % 2), 1, 1, canvasColor.figureLight);
+    const tail = left ? x0 + SHIP_W : x0;
+    const dir = left ? 1 : -1;
+    px(ctx, left ? tail : tail - len, y0 + 4, len, 2, canvasColor.text);
+    px(ctx, left ? tail : tail - 2, y0 + 4, 2, 2, canvasColor.figureGlow);
+    px(ctx, tail + dir * (len + 2) - (left ? 1 : 0), y0 + 4 + (Math.floor(t / 120) % 2), 1, 1, canvasColor.figureLight);
   }
 }
 
@@ -461,11 +583,11 @@ function drawRoute(ctx: CanvasRenderingContext2D, at: (t: number) => Pt, progres
 
 // ── Frame ───────────────────────────────────────────────────────────────────
 
-/** The static worlds, drawn once per pair of looks. */
+/** The static sky and ground, drawn once per fixture. */
 let layer: { key: string; canvas: HTMLCanvasElement } | null = null;
 
-function worldsLayer(awayLook: WorldLook, homeLook: WorldLook, style: StadiumStyle): HTMLCanvasElement | null {
-  const key = JSON.stringify([awayLook, homeLook, style]);
+function worldsLayer(f: JourneyFrame): HTMLCanvasElement | null {
+  const key = JSON.stringify([f.layout.sky, f.homeLook, f.stadium.style]);
   if (layer?.key === key) return layer.canvas;
   const canvas = document.createElement('canvas');
   canvas.width = ART.w * PIXEL_SCALE;
@@ -474,17 +596,15 @@ function worldsLayer(awayLook: WorldLook, homeLook: WorldLook, style: StadiumSty
   if (!ctx) return null;
   setGrid(PIXEL_SCALE);
   resetFill();
-  const w = awayWorld(awayLook.size);
-  drawBody(ctx, w.cx, w.cy, w.r, awayLook, 3);
-  drawBody(ctx, BASE.cx, BASE.cy, BASE.r, TRAINING_MOON, 5);
-  if (homeLook.ring) skyRing(ctx, homeLook.ring);
-  // A world hanging over the ground (Pluto over Charon's north stand).
-  const sky = skyBody(style);
-  const skyLook = sky ? WORLDS[sky]?.look : undefined;
-  if (skyLook) drawBody(ctx, GROUND_X - 34, 92, 15, skyLook, 4);
-  // The near world fills the corner, so it is dimmed: the stand is the
-  // bright thing on it.
-  drawBody(ctx, STADIUM_WORLD.cx, STADIUM_WORLD.cy, STADIUM_WORLD.r, homeLook.feature === 'station' ? { ...TRAINING_MOON, size: 'giant' } : homeLook, 8, 0.3);
+  if (f.homeLook.ring) skyRing(ctx, f.homeLook.ring);
+  // The real sky, farthest first.
+  f.layout.sky.forEach((b, i) => {
+    if (b.kind === 'sun') return drawSun(ctx, b.x, b.y, b.r);
+    const look = lookFor(b.name);
+    if (look) drawBody(ctx, b.x, b.y, b.r, look, 3 + i, 0, b.light);
+  });
+  // The near world, dimmed so the stand is the bright thing on it.
+  drawBody(ctx, STADIUM_WORLD.cx, STADIUM_WORLD.cy, STADIUM_WORLD.r, f.homeLook.feature === 'station' ? { ...TRAINING_MOON, size: 'giant' } : f.homeLook, 8, 0.3);
   layer = { key, canvas };
   return canvas;
 }
@@ -493,7 +613,7 @@ function worldsLayer(awayLook: WorldLook, homeLook: WorldLook, style: StadiumSty
  * Draw one frame into a canvas sized ART x PIXEL_SCALE.
  */
 export function drawJourney(ctx: CanvasRenderingContext2D, f: JourneyFrame): void {
-  const worlds = worldsLayer(f.awayLook, f.homeLook, f.stadium.style);
+  const worlds = worldsLayer(f);
   setGrid(PIXEL_SCALE);
   resetFill();
   px(ctx, 0, 0, ART.w, ART.h, canvasColor.bg);
@@ -506,7 +626,9 @@ export function drawJourney(ctx: CanvasRenderingContext2D, f: JourneyFrame): voi
   if (worlds) ctx.drawImage(worlds, 0, 0);
   resetFill();
 
-  const r = routes(f.awayLook.size, f.stadium.style);
+  const r = f.layout;
+  drawTrainingBase(ctx, r.base.x, f.homeKit, f.training, FLOATING.includes(f.stadium.style), f.t);
+  resetFill();
   drawRoute(ctx, r.away.at, f.away.phase === 'docked' ? -1 : f.away.progress, f.away.kit);
   drawRoute(ctx, r.home.at, f.home.phase === 'docked' ? -1 : f.home.progress, f.home.kit);
   drawStadium(
@@ -523,10 +645,13 @@ export function drawJourney(ctx: CanvasRenderingContext2D, f: JourneyFrame): voi
   );
   resetFill();
 
-  const place = (s: ShipFrame, leg: (typeof r)['away'], seed: number) => {
+  const place = (s: ShipFrame, leg: Way, seed: number) => {
     const flying = s.phase === 'flying';
     const p = flying ? leg.at(s.progress) : s.phase === 'docked' ? leg.dock : leg.park;
-    drawShip(ctx, p.x, p.y, s.kit, flying, f.t, seed);
+    // Face the way it is going: along the route in flight, toward the ground
+    // when waiting or landed.
+    const ahead = flying ? leg.at(Math.min(1, s.progress + 0.02)).x - p.x : (s.phase === 'docked' ? leg.park.x : GROUND_X) - p.x;
+    drawShip(ctx, p.x, p.y, s.kit, flying, f.t, seed, ahead < 0);
   };
   place(f.home, r.home, 1.7);
   place(f.away, r.away, 0.3);
