@@ -36,7 +36,9 @@ function fakeDb(goals: unknown[]) {
 }
 
 function wrapperFor(db: IslSupabaseClient) {
-  return ({ children }: { children: ReactNode }) => <SupabaseProvider client={db}>{children}</SupabaseProvider>;
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return <SupabaseProvider client={db}>{children}</SupabaseProvider>;
+  };
 }
 
 /** Let the fetch promises settle inside act. */

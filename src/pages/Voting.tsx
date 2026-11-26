@@ -165,8 +165,9 @@ export default function Voting() {
   const [options,        setOptions]        = useState<FocusOption[]>([]);
   const [tally,          setTally]          = useState<FocusTallyEntry[]>([]);
   const [enactedHistory, setEnactedHistory] = useState<EnactedFocusRow[]>([]);
-  const [loaded,         setLoaded]         = useState<boolean>(false);
-  const [loadError,      setLoadError]      = useState<unknown>(null);
+  // How the last fetch settled, tagged with the request it answered (see
+  // `fetchKey` below): `loaded` and `loadError` are derived from it.
+  const [settled, setSettled] = useState<{ key: string; error: unknown } | null>(null);
 
   // Per-option in-flight vote state, keyed by option_id. Cleared on success
   // so the disabled state lifts as soon as the write returns.
@@ -187,6 +188,15 @@ export default function Voting() {
 
   const teamId = profile?.favourite_team_id ?? null;
 
+  // One key per request: the club and the refresh counter. The page is
+  // loaded once the fetch for the CURRENT key has settled, so a successful
+  // vote (refreshKey bump) or a change of club shows the loading state again
+  // and clears any earlier error, without the effect setting state
+  // synchronously (react-hooks set-state-in-effect, #685).
+  const fetchKey = `${teamId ?? ''}|${refreshKey}`;
+  const loaded = settled?.key === fetchKey;
+  const loadError = loaded ? settled.error : null;
+
   // Primary fetch: runs once user and team are present, and again after
   // every successful vote (refreshKey bump). Loads both the current-season
   // options and tally AND the most recent enacted history, so the "cosmos
@@ -194,8 +204,6 @@ export default function Voting() {
   useEffect(() => {
     if (!teamId) return undefined;
     let cancelled = false;
-    setLoadError(null);
-    setLoaded(false);
     (async () => {
       try {
         const s = await getActiveSeason(db);
@@ -210,16 +218,15 @@ export default function Voting() {
         setOptions(opts);
         setTally(t);
         setEnactedHistory(history);
-        setLoaded(true);
+        setSettled({ key: fetchKey, error: null });
       } catch (err) {
         if (cancelled) return;
         console.warn('[Voting] fetch failed:', err);
-        setLoadError(err);
-        setLoaded(true);
+        setSettled({ key: fetchKey, error: err });
       }
     })();
     return () => { cancelled = true; };
-  }, [db, teamId, refreshKey]);
+  }, [db, teamId, fetchKey]);
 
   // tally to a lookup by option_id so each option row paints its bar in
   // O(1) without re-scanning the tally array.

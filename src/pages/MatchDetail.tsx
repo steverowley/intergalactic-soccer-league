@@ -39,7 +39,7 @@
 //
 // 404 case: matchId returns no row → renders an "Unknown match" page.
 
-import { useEffect, useMemo, useState, type ComponentProps, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ComponentProps, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import WagerWidget from '../components/WagerWidget';
 import { useSupabase, usePublicReadClient } from '../shared/supabase/SupabaseProvider';
@@ -93,6 +93,12 @@ const BACK = { to: '/matches', label: 'All matches' } as const;
  * has closed (the whole match has been revealed).
  */
 const REVEAL_DONE_MINUTE = 120;
+
+/**
+ * The event list shown before a fetch has answered: one shared empty array,
+ * so the visible-event memo keeps the same input across renders.
+ */
+const NO_EVENTS: MatchEventRow[] = [];
 
 // ── Loose match row ─────────────────────────────────────────────────────────
 // getMatch() returns a deeply-nested join (home_team / away_team / managers /
@@ -1010,91 +1016,102 @@ export function LiveCommentary({
   const status = match?.status ?? 'scheduled';
   const isCancelled = status === 'cancelled';
   const kickoffMs = match?.scheduled_at ? new Date(match.scheduled_at).getTime() : null;
-  // eslint-disable-next-line react-hooks/purity -- intentional wall-clock read; re-renders are driven by the per-second elapsedMinute tick below
-  const kickoffPassed = kickoffMs != null && kickoffMs <= Date.now();
+
+  // ── Wall clock ────────────────────────────────────────────────────────────
+  // The time every live-viewing decision below is read against. Seeded once
+  // on mount and advanced by the per-second tick effect further down, so
+  // render never reads Date.now() itself (react-hooks purity, #685): a
+  // render-time read returns a new value on every render, which made every
+  // derived value below unstable.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const kickoffPassed = kickoffMs != null && kickoffMs <= nowMs;
 
   const showSection = !isCancelled && (kickoffPassed || status === 'completed');
 
-  const [events, setEvents] = useState<MatchEventRow[]>([]);
   const [duration, setDuration] = useState<number>(DEFAULT_MATCH_DURATION_SECONDS);
-  const [elapsedMinute, setElapsedMinute] = useState<number>(0);
-  const [loaded, setLoaded] = useState<boolean>(false);
-  const [loadError, setLoadError] = useState<unknown>(null);
   // Bumped by the error state's retry button to re-run the initial fetch.
   const [attempt, setAttempt] = useState(0);
 
+  // One key per initial fetch: the match, whether the section is showing,
+  // and the retry counter. The event list and the fetch outcome are stored
+  // with the key they belong to, and read back only while that key is
+  // current. So a new match or a retry starts from an empty, unloaded,
+  // error-free state the moment it begins, without the effect resetting
+  // state synchronously (react-hooks set-state-in-effect, #685).
+  const fetchKey = `${match?.id ?? ''}|${showSection}|${attempt}`;
+  const [eventLog, setEventLog] = useState<{ key: string; rows: MatchEventRow[] }>({ key: '', rows: [] });
+  const [settled, setSettled] = useState<{ key: string; error: unknown } | null>(null);
+  const events = eventLog.key === fetchKey ? eventLog.rows : NO_EVENTS;
+  const loaded = settled?.key === fetchKey;
+  const loadError = loaded ? settled.error : null;
+  // Fold rows from either source (initial fetch or live poll) into the log
+  // for the current key, starting it afresh when the key has moved on.
+  const mergeIntoLog = useCallback((key: string, rows: MatchEventRow[]) => {
+    setEventLog((prev) => ({
+      key,
+      rows: mergeAndSortEvents(prev.key === key ? prev.rows : [], rows),
+    }));
+  }, []);
+
   // Derived "is the viewer still inside the paced window?": true while
   // wall-clock elapsed-from-kickoff is < match_duration_seconds.
-  const livePacingWindowOpen =
-    kickoffMs != null &&
-    // eslint-disable-next-line react-hooks/purity -- intentional wall-clock read; the per-second elapsedMinute tick re-renders to keep this fresh
-    Date.now() < kickoffMs + duration * 1000;
+  const endAtMs = kickoffMs != null ? kickoffMs + duration * 1000 : null;
+  const livePacingWindowOpen = endAtMs != null && nowMs < endAtMs;
+
+  // ── Elapsed game minute, derived from the wall clock ──────────────────────
+  //   • No kickoff time: a completed match shows everything, anything else
+  //     shows nothing yet.
+  //   • Past the end of the paced window: everything (the replay state).
+  //   • Otherwise: the paced minute for the current wall-clock time.
+  let elapsedMinute: number;
+  if (!match?.scheduled_at || endAtMs == null) {
+    elapsedMinute = status === 'completed' ? REVEAL_DONE_MINUTE : 0;
+  } else if (nowMs >= endAtMs) {
+    elapsedMinute = REVEAL_DONE_MINUTE;
+  } else {
+    elapsedMinute = computeElapsedGameMinute(match.scheduled_at, new Date(nowMs), duration);
+  }
 
   // ── Initial fetch: event log + season pacing knob ─────────────────────────
   useEffect(() => {
     if (!showSection || !match?.id) return undefined;
     let cancelled = false;
-    setEvents([]);
-    setLoaded(false);
-    setLoadError(null);
     // withTimeout: a hung read becomes a visible error after 10 s.
     withTimeout(Promise.all([getMatchEvents(publicDb, match.id), getMatchDurationSeconds(publicDb, match.id)]))
       .then(([evRows, durSeconds]) => {
         if (cancelled) return;
-        // Merge against current state (not []) so a polled row that landed
-        // between the setEvents([]) above and this resolution is preserved.
-        setEvents((prev) => mergeAndSortEvents(prev, evRows));
+        // Merge against the current log for this key (not []) so a polled
+        // row that landed before this resolution is preserved.
+        mergeIntoLog(fetchKey, evRows);
         setDuration(durSeconds);
-        setLoaded(true);
+        setSettled({ key: fetchKey, error: null });
       })
       .catch((err) => {
         if (cancelled) return;
         console.warn('[LiveCommentary] fetch failed:', err);
-        setLoadError(err);
-        setLoaded(true);
+        setSettled({ key: fetchKey, error: err });
       });
     return () => {
       cancelled = true;
     };
-  }, [publicDb, match?.id, showSection, attempt]);
+  }, [publicDb, match?.id, showSection, fetchKey, mergeIntoLog]);
 
-  // ── Elapsed-minute clock ──────────────────────────────────────────────────
+  // ── Wall-clock tick ───────────────────────────────────────────────────────
+  // SELF-TERMINATING INTERVAL: advances the clock once per LIVE_TICK_MS
+  // until wall-clock crosses the end of the paced window, records that
+  // final time (which flips the section into its replay state) and stops.
+  // It starts whenever the window's end is known, even if that end has
+  // already passed, so a clock left behind by an earlier window (the pacing
+  // knob arriving with a different duration) catches up on the first tick.
   useEffect(() => {
-    const kickoff = match?.scheduled_at;
-    if (!kickoff) {
-      if (status === 'completed') setElapsedMinute(REVEAL_DONE_MINUTE);
-      return undefined;
-    }
-
-    const kickoffAtMs = new Date(kickoff).getTime();
-    const endAtMs = kickoffAtMs + duration * 1000;
-
-    if (Date.now() >= endAtMs) {
-      setElapsedMinute(REVEAL_DONE_MINUTE);
-      return undefined;
-    }
-
-    // SELF-TERMINATING INTERVAL: the tick self-clears the moment wall-clock
-    // crosses endAtMs, emits one final setElapsedMinute(REVEAL_DONE_MINUTE)
-    // to flip the section into its replay state, and then returns.
-    let interval: ReturnType<typeof setInterval> | null = null;
-    const tick = (): void => {
-      if (Date.now() >= endAtMs) {
-        setElapsedMinute(REVEAL_DONE_MINUTE);
-        if (interval !== null) {
-          clearInterval(interval);
-          interval = null;
-        }
-        return;
-      }
-      setElapsedMinute(computeElapsedGameMinute(kickoff, new Date(), duration));
-    };
-    tick();
-    interval = setInterval(tick, LIVE_TICK_MS);
-    return () => {
-      if (interval !== null) clearInterval(interval);
-    };
-  }, [status, match?.scheduled_at, duration]);
+    if (endAtMs === null) return undefined;
+    const interval = setInterval(() => {
+      const t = Date.now();
+      setNowMs(t);
+      if (t >= endAtMs) clearInterval(interval);
+    }, LIVE_TICK_MS);
+    return () => clearInterval(interval);
+  }, [endAtMs]);
 
   // ── Live poll (whenever new events may still arrive) ──────────────────────
   // Polls the cached read proxy instead of holding a Realtime channel: the
@@ -1106,7 +1123,7 @@ export function LiveCommentary({
       if (!liveMatchId) return;
       getMatchEvents(publicDb, liveMatchId)
         .then((rows) => {
-          if (rows.length > 0) setEvents((prev) => mergeAndSortEvents(prev, rows));
+          if (rows.length > 0) mergeIntoLog(fetchKey, rows);
         })
         .catch(() => {
           /* transient: the next poll retries */
