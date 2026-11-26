@@ -8,11 +8,9 @@
     "home_kit": "Funereal black and deep green with an underworld-gate motif.",
     "away_kit": "Charcoal with green seams.",
     "third_kit": "Obsidian with a faint river-of-souls line.",
-    "history": "Orcus Athletic are the Kuiper's dark horses — a direct, defensively stubborn side who lurk in the gloom and strike from set pieces. Quiet, ominous, and dangerous, they specialise in stealing matches no one expected them to win.",
+    "history": "Orcus Athletic are the Kuiper's dark horses: a direct, defensively stubborn side who lurk in the gloom and strike from set pieces. Quiet, ominous, and dangerous, they specialise in stealing matches no one expected them to win.",
     "club_culture": "Brooding, stubborn, and quietly dangerous. The Shades thrive on being underestimated.",
-    "political_leaning": "Kuiper-traditionalist — a solemn, ritual-bound community.",
-    "trophy_cabinet": ["A reputation for stealing results from set pieces"],
-    "legends": ["Charon Vex — the dead-ball specialist whose free-kicks were the stuff of legend"],
+    "political_leaning": "Kuiper-traditionalist: a solemn, ritual-bound community.",
     "achievements": ["Most set-piece goals in the Kuiper"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Compact, suited to the deep, direct block.",
     "pitch_type": "Basic frontier synthetic turf, hard-wearing.",
     "stand_names": ["The Vex Stand", "The Gate End", "The Shades' Terrace"],
-    "bio": "The Pit is a dim, brooding basin where the home crowd falls eerily silent before every set piece — and erupts when the Shades steal another goal from the gloom."
+    "bio": "The Pit is a dim, brooding basin where the home crowd falls eerily silent before every set piece, and erupts when the Shades steal another goal from the gloom."
   },
   "training_facility": {
     "date_built": "A basic facility in the shadowed basin.",

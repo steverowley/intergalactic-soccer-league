@@ -8,11 +8,9 @@
     "home_kit": "Pale silver and sky-blue with a high-arc trajectory motif.",
     "away_kit": "White with blue trim and a faint crater pattern.",
     "third_kit": "Deep space-blue with a luminous arc.",
-    "history": "Vesta are masters of low-gravity football — a direct side that launches long, floating balls into the great open spaces the weak gravity creates. It looks strange to outsiders and works beautifully for the Floaters.",
+    "history": "Vesta are masters of low-gravity football: a direct side that launches long, floating balls into the great open spaces the weak gravity creates. It looks strange to outsiders and works beautifully for the Floaters.",
     "club_culture": "Inventive, proud, and at home in the low gravity. The Floaters embrace what makes their world different.",
-    "political_leaning": "Belt frontier-pragmatist — practical, independent, and quietly inventive.",
-    "trophy_cabinet": ["A reputation for a style no one else can replicate"],
-    "legends": ["Arc Velmore — the target striker who turned the high ball into an art"],
+    "political_leaning": "Belt frontier-pragmatist: practical, independent, and quietly inventive.",
     "achievements": ["Most goals from direct, long-ball play in the belt"]
   },
   "stadium": {
@@ -26,7 +24,7 @@
   "training_facility": {
     "date_built": "A standard complex on the crater rim.",
     "sponsors": "Funded by the Vestan survey guilds.",
-    "bio": "The Vesta Athletic Centre drills the timing and aerial judgement that low-gravity, direct football demands — a craft unique to the protoplanet."
+    "bio": "The Vesta Athletic Centre drills the timing and aerial judgement that low-gravity, direct football demands, a craft unique to the protoplanet."
   },
   "manager": {
     "gender": "Male",

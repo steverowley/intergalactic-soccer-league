@@ -10,9 +10,7 @@
     "third_kit": "Deep void-green with scattered points of light.",
     "history": "Scattered Disc FC Rangers play wild, untamed football from the literal edge of the settled system. Balanced but unpredictable, hardened by survival, they are nobody's easy fixture and proud of how far they have come from nothing at all.",
     "club_culture": "Wild, self-reliant, and unbreakable. The Scatter survive where others wouldn't dare to settle.",
-    "political_leaning": "Kuiper-frontier anarchist — beholden to no one beyond their own.",
-    "trophy_cabinet": ["A reputation as the toughest survivors in the leagues"],
-    "legends": ["Drift Vane — the captain who carried the club through its leanest years"],
+    "political_leaning": "Kuiper-frontier anarchist, beholden to no one beyond their own.",
     "achievements": ["Most remarkable survival story in league history"]
   },
   "stadium": {
@@ -26,7 +24,7 @@
   "training_facility": {
     "date_built": "A basic facility scraped together at the frontier.",
     "sponsors": "Funded by the outposts' survival co-operatives.",
-    "bio": "The Scatter Academy drills survivalist football — adaptability, resilience, and making do with whatever the harsh frontier provides."
+    "bio": "The Scatter Academy drills survivalist football: adaptability, resilience, and making do with whatever the harsh frontier provides."
   },
   "manager": {
     "gender": "Male",
@@ -43,7 +41,7 @@
     "achievements": ["Kept the most remote club in the leagues alive and competitive"]
   },
   "managing_staff": [
-    { "role": "assistant_manager", "gender": "Male", "race": "Human (Kuiper-adapted)", "age": 43, "nationality": "Trans-Neptunian", "appearance": "Lean and resourceful, can fix anything with nothing.", "bio": "Void Mensah teaches survivalist football — making do, adapting fast, and finding an edge where none should exist.", "personality": "Resourceful and unflappable.", "playing_history": "A frontier journeyman.", "playing_philosophy": "Use what you have, however little. Resourcefulness is a tactic.", "political_leaning": "Kuiper-frontier anarchist.", "culture": "The survivalist.", "achievements": ["Built the side's adaptability"] }
+    { "role": "assistant_manager", "gender": "Male", "race": "Human (Kuiper-adapted)", "age": 43, "nationality": "Trans-Neptunian", "appearance": "Lean and resourceful, can fix anything with nothing.", "bio": "Void Mensah teaches survivalist football: making do, adapting fast, and finding an edge where none should exist.", "personality": "Resourceful and unflappable.", "playing_history": "A frontier journeyman.", "playing_philosophy": "Use what you have, however little. Resourcefulness is a tactic.", "political_leaning": "Kuiper-frontier anarchist.", "culture": "The survivalist.", "achievements": ["Built the side's adaptability"] }
   ],
   "players": [
     { "jersey_number": 1, "gender": "Male", "race": "Slyari (Titan)", "species": "slyari", "appearance": "Calm and adaptable, a keeper hardened by the frontier.", "bio": "Scatter Vasquez is the balanced keeper who has seen everything the edge can throw at him.", "personality": "Composed and adaptable.", "political_leaning": "Kuiper-frontier anarchist.", "culture": "The constant.", "achievements": ["Ever-present in goal"], "injuries": "Fully fit." },

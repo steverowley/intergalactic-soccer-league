@@ -22,6 +22,15 @@ export const EM_DASH = '\u2014';
 /** Roots that hold fan-facing copy: the web app and the edge functions. */
 export const COPY_ROOTS = ['src', 'supabase/functions'];
 
+/**
+ * Roots of authored JSON content that is seeded into the database and shown
+ * to fans (content/profiles/*.json becomes entities.meta.profile). Every
+ * string VALUE is prose here; keys are field names and never flagged. The
+ * database copy itself is outside any file scan: docs/db-house-style.md has
+ * the query that measures it.
+ */
+export const CONTENT_ROOTS = ['content'];
+
 const SKIP_FILE = /(\.test|\.spec)\.tsx?$|\.d\.ts$/;
 const SKIP_PATH = [`src${sep}types${sep}database.ts`];
 
@@ -104,6 +113,50 @@ export function findEmDashes(repoRoot: string): EmDashHit[] {
       ts.forEachChild(node, visit);
     };
     visit(sf);
+  }
+  hits.push(...findContentEmDashes(repoRoot));
+  return hits;
+}
+
+function listJson(dir: string, out: string[]): void {
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return; // a root that does not exist holds no copy
+  }
+  for (const name of names) {
+    if (name === 'node_modules' || name.startsWith('.')) continue;
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) listJson(p, out);
+    else if (name.endsWith('.json')) out.push(p);
+  }
+}
+
+/** Every em dash in a string value of the authored JSON content. */
+function findContentEmDashes(repoRoot: string): EmDashHit[] {
+  const files: string[] = [];
+  for (const r of CONTENT_ROOTS) listJson(join(repoRoot, r), files);
+  const hits: EmDashHit[] = [];
+  for (const file of files) {
+    const source = readFileSync(file, 'utf8');
+    if (!source.includes(EM_DASH)) continue;
+    const rel = relative(repoRoot, file).split(sep).join('/');
+    const values: string[] = [];
+    const walk = (v: unknown): void => {
+      if (typeof v === 'string') values.push(v);
+      else if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+    };
+    walk(JSON.parse(source));
+    for (const text of values) {
+      if (!text.includes(EM_DASH) || text.trim() === EM_DASH) continue;
+      // Locate the value in the file for the report. JSON.stringify gives the
+      // same escaping as the authored file for plain prose; fall back to line 1.
+      const at = source.indexOf(JSON.stringify(text));
+      const line = at < 0 ? 1 : source.slice(0, at).split('\n').length;
+      hits.push({ file: rel, line, text: text.trim().slice(0, 160) });
+    }
   }
   return hits;
 }

@@ -8,11 +8,9 @@
     "home_kit": "Hi-vis amber and black with a drill-tread pattern.",
     "away_kit": "Black with amber hazard striping.",
     "third_kit": "Deep-shaft grey with an amber bit-line.",
-    "history": "Solar Miners drill for every inch of the pitch — a relentless high-pressing side that hounds opponents into the ground and never, ever lets up. Pure work-rate as a philosophy, the most exhausting team in the belt to face.",
+    "history": "Solar Miners drill for every inch of the pitch: a relentless high-pressing side that hounds opponents into the ground and never, ever lets up. Pure work-rate as a philosophy, the most exhausting team in the belt to face.",
     "club_culture": "Relentless, blue-collar, and proud of the graft. The Drillers believe effort is non-negotiable.",
-    "political_leaning": "Belt labour-militant — a miners' union club with a chip on its shoulder.",
-    "trophy_cabinet": ["A reputation for running better-resourced sides into exhaustion"],
-    "legends": ["Bore Vask — the midfielder who reputedly never stopped running"],
+    "political_leaning": "Belt labour-militant: a miners' union club with a chip on its shoulder.",
     "achievements": ["Most pressures applied in the belt"]
   },
   "stadium": {
@@ -26,7 +24,7 @@
   "training_facility": {
     "date_built": "A basic facility at the extraction camp.",
     "sponsors": "Funded on a shoestring by the drilling crews.",
-    "bio": "The Extraction Athletic Campus drills work-rate above all — the Drillers' relentless press is built on conditioning so brutal that opponents simply cannot match it."
+    "bio": "The Extraction Athletic Campus drills work-rate above all. The Drillers' relentless press is built on conditioning so brutal that opponents simply cannot match it."
   },
   "manager": {
     "gender": "Male",

@@ -8,11 +8,9 @@
     "home_kit": "Industrial blue and steel-grey with a crossroads motif on the chest.",
     "away_kit": "Hazard-yellow with black trim, like a docking beacon.",
     "third_kit": "Gunmetal with faint shipping-lane lines.",
-    "history": "Beltway are forged in the lawless transit colonies — tactical, gritty, and impossible to intimidate. They sit deep, soak up everything, and counter with cold precision, the football equivalent of a hard bargain struck at a busy port.",
+    "history": "Beltway are forged in the lawless transit colonies: tactical, gritty, and impossible to intimidate. They sit deep, soak up everything, and counter with cold precision, the football equivalent of a hard bargain struck at a busy port.",
     "club_culture": "Streetwise, pragmatic, and unsentimental. The Junkers respect graft and trust no one who hasn't earned it.",
-    "political_leaning": "Belt-syndicalist — a haulers' and dockers' club through and through.",
-    "trophy_cabinet": ["A reputation as the belt's craftiest cup fighters"],
-    "legends": ["Cargo Vels — the counterattacking captain who never gave the ball away cheaply"],
+    "political_leaning": "Belt-syndicalist: a haulers' and dockers' club through and through.",
     "achievements": ["Most efficient counterattacking record in the belt"]
   },
   "stadium": {
@@ -26,7 +24,7 @@
   "training_facility": {
     "date_built": "A standard-grade facility wedged into the transit colony.",
     "sponsors": "Funded co-operatively by the haulage guilds.",
-    "bio": "The Junction Academy drills organisation and transition above all — winning the ball, keeping the shape, and breaking fast. It is practical schooling for a practical club."
+    "bio": "The Junction Academy drills organisation and transition above all: winning the ball, keeping the shape, and breaking fast. It is practical schooling for a practical club."
   },
   "manager": {
     "gender": "Male",

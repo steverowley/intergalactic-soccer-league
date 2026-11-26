@@ -6,6 +6,10 @@
 // supabase/functions/ with the TypeScript compiler and inspects only real text
 // (string literals, template text, JSX text), so comments never trip it. A
 // string that is only a dash, used as an empty-value placeholder, is allowed.
+// It also reads every string value in content/*.json: the authored profiles
+// that the seed script writes into entities.meta.profile, so a reseed can never
+// put a dash back into the database. The database copy itself cannot be
+// scanned from here; docs/db-house-style.md has the query that measures it.
 //
 // If this fails, list the offenders with:
 //   npx tsx scripts/find-em-dashes.ts
@@ -54,6 +58,11 @@ describe('the scanner itself', () => {
     join(root, 'supabase', 'functions', 'w', 'pool.ts'),
     `export const pool = ['the keeper ${D} again'];`,
   );
+  mkdirSync(join(root, 'content', 'profiles'), { recursive: true });
+  writeFileSync(
+    join(root, 'content', 'profiles', 'club.json'),
+    ['{', `  "team": { "bio": "Seeded prose ${D} read by fans", "placeholder": "${D}" },`, `  "key ${D} name": "fine"`, '}'].join('\n'),
+  );
 
   const hits = findEmDashes(root);
 
@@ -62,12 +71,18 @@ describe('the scanner itself', () => {
     // Line 7 is a dash-only gap between two template variables: a separator
     // inside a sentence, not an empty-value placeholder.
     expect(lines).toEqual([
+      'content/profiles/club.json:2',
       'src/copy.tsx:2',
       'src/copy.tsx:4',
       'src/copy.tsx:5',
       'src/copy.tsx:7',
       'supabase/functions/w/pool.ts:1',
     ]);
+  });
+
+  it('reads seeded JSON content by value: keys and a lone placeholder are not prose', () => {
+    const content = hits.filter((h) => h.file.startsWith('content/'));
+    expect(content.map((h) => h.text)).toEqual([`Seeded prose ${D} read by fans`]);
   });
 
   it('ignores comments, the lone placeholder, console calls and test files', () => {

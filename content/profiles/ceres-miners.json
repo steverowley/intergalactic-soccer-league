@@ -8,11 +8,9 @@
     "home_kit": "Earth-brown and slate with an ore-seam pattern across the chest.",
     "away_kit": "Dust-grey with brown trim.",
     "third_kit": "Deep-core black with a single ore-vein stripe.",
-    "history": "Ceres Miners are the toughest, oldest club in the belt — a defensive, unyielding side that grinds opponents into the regolith. They concede little and complain less, the embodiment of belt grit.",
+    "history": "Ceres Miners are the toughest, oldest club in the belt: a defensive, unyielding side that grinds opponents into the regolith. They concede little and complain less, the embodiment of belt grit.",
     "club_culture": "Old, hard, and proud. The Diggers measure worth in graft and longevity.",
-    "political_leaning": "Belt old-frontier — the conservative heart of belt labour.",
-    "trophy_cabinet": ["The belt's oldest and most storied honours board"],
-    "legends": ["Bedrock Hane — the centre-back who anchored a generation of Diggers sides"],
+    "political_leaning": "Belt old-frontier: the conservative heart of belt labour.",
     "achievements": ["Most clean sheets in belt history"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Compact, suited to the deep defensive block.",
     "pitch_type": "Hardy synthetic turf rated for low gravity.",
     "stand_names": ["The Hane Stand", "The Core End", "The Diggers' Terrace"],
-    "bio": "The Rock is exactly that — a hard, cold, unforgiving ground where the old belt crowd appreciates a clearance as much as a goal. Visitors leave bruised and pointless."
+    "bio": "The Rock is exactly that: a hard, cold, unforgiving ground where the old belt crowd appreciates a clearance as much as a goal. Visitors leave bruised and pointless."
   },
   "training_facility": {
     "date_built": "A standard complex maintained on a careful budget.",
@@ -34,7 +32,7 @@
     "age": 55,
     "nationality": "Cerean",
     "appearance": "Grizzled and unsmiling, with the heavy hands of a former miner.",
-    "bio": "Gravel Asante is the elder statesman of belt management — a defensive purist who has made the Diggers impossible to break down for decades. He trusts the block and despises risk.",
+    "bio": "Gravel Asante is the elder statesman of belt management, a defensive purist who has made the Diggers impossible to break down for decades. He trusts the block and despises risk.",
     "personality": "Stern, patient, and immovable.",
     "playing_history": "A hard-as-rock centre-back in his day.",
     "playing_philosophy": "Concede nothing. The belt rewards those who endure.",

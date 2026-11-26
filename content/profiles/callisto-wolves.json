@@ -8,11 +8,9 @@
     "home_kit": "Steel-grey and white with a frosted wolf-fur texture across the shoulders.",
     "away_kit": "Midnight blue with silver claw-marks raking down one side.",
     "third_kit": "Pale ice-white with a faint pawprint trail.",
-    "history": "Callisto Wolves play as a pack or not at all. Their coordinated, snapping press is the most synchronised in the league — eleven players moving as one organism, hunting the ball in relays until the prey makes a mistake. Individual stars are distrusted here; the collective is everything.",
+    "history": "Callisto Wolves play as a pack or not at all. Their coordinated, snapping press is the most synchronised in the league: eleven players moving as one organism, hunting the ball in relays until the prey makes a mistake. Individual stars are distrusted here; the collective is everything.",
     "club_culture": "Communal, loyal, and fiercely collective. At Callisto, no one hunts alone.",
-    "political_leaning": "Frontier collectivist — a co-operative club in a co-operative colony.",
-    "trophy_cabinet": ["A proud record of punching above their weight"],
-    "legends": ["Lupa Vane — the captain who could trigger the whole pack's press with a single glance"],
+    "political_leaning": "Frontier collectivist: a co-operative club in a co-operative colony.",
     "achievements": ["Most coordinated team presses in the league"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Compact, to keep the pack tight and the prey cornered.",
     "pitch_type": "Insulated synthetic turf that holds heat against the moon's deep cold.",
     "stand_names": ["The Vane Stand", "The Den End", "The Frost Terrace"],
-    "bio": "The Howling Den is a wall of sound — the Pack's supporters howl in unison when the press is triggered, a noise that has unnerved far grander visitors into surrendering the ball."
+    "bio": "The Howling Den is a wall of sound: the Pack's supporters howl in unison when the press is triggered, a noise that has unnerved far grander visitors into surrendering the ball."
   },
   "training_facility": {
     "date_built": "A modest, functional centre built on the colony's tight budget.",

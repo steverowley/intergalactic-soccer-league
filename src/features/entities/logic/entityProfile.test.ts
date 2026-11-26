@@ -33,8 +33,6 @@ const validTeam = {
   history: 'Long.',
   club_culture: 'Proud',
   political_leaning: 'Establishment',
-  trophy_cabinet: ['Cup'],
-  legends: ['Someone'],
   achievements: ['Title'],
 };
 
@@ -132,6 +130,17 @@ describe('parseStoredProfile (profiles read back from the database)', () => {
   it('validates other kinds exactly like parseProfile', () => {
     expect(() => parseStoredProfile('team', validTeam)).not.toThrow();
     expect(() => parseStoredProfile('team', { history: 'x' })).toThrow();
+  });
+
+  it('reads a club profile from before 0103 and drops its non-canon honours lists', () => {
+    // Canon owns honours and legends (#704). A stored row that still has the
+    // old lists must parse (the code deploys before the migration runs) and
+    // must not hand them on to any reader.
+    const legacy = { ...validTeam, trophy_cabinet: ['Cup'], legends: ['Someone'] };
+    const out = parseStoredProfile('team', legacy) as Record<string, unknown>;
+    expect(out).not.toHaveProperty('trophy_cabinet');
+    expect(out).not.toHaveProperty('legends');
+    expect(out['history']).toBe('Long.');
   });
 });
 

@@ -1,24 +1,22 @@
 {
   "team_id": "uranus-sidewinders",
   "team": {
-    "date_founded": "Founded on tilted, sideways-spinning Uranus, where nothing is quite oriented the way it should be — including the football.",
+    "date_founded": "Founded on tilted, sideways-spinning Uranus, where nothing is quite oriented the way it should be, including the football.",
     "fans_nickname": "The Tilt",
     "number_of_fans": "Around 19 million, eccentric and devoted, who never know what they'll get.",
     "badge": "A planet tipped fully on its side, a serpentine sidewinder coiled around it.",
     "home_kit": "Turquoise and white with a diagonal, off-kilter slash across the body.",
     "away_kit": "Pale ice-cyan with crooked, sideways striping.",
     "third_kit": "Deep teal with a tilted, asymmetric crest.",
-    "history": "Uranus Sidewinders are the league's wild card. Raised on a world that spins on its side, they play unpredictable, lopsided, attacking football that bewilders opponents and, frequently, themselves. On their day they are dazzling; on their off day, chaos — and no one, least of all them, can predict which it will be.",
+    "history": "Uranus Sidewinders are the league's wild card. Raised on a world that spins on its side, they play unpredictable, lopsided, attacking football that bewilders opponents and, frequently, themselves. On their day they are dazzling; on their off day, chaos. And no one, least of all them, can predict which it will be.",
     "club_culture": "Eccentric, attacking, and gloriously unpredictable. The Tilt would rather entertain than be safe.",
-    "political_leaning": "Frontier-eccentric — contrarian and allergic to convention.",
-    "trophy_cabinet": ["A scattering of giant-killings and a few baffling collapses"],
-    "legends": ["Skew Vantel — the winger who scored from impossible angles no one else would try"],
+    "political_leaning": "Frontier-eccentric: contrarian and allergic to convention.",
     "achievements": ["Most goals from unconventional positions in the league"]
   },
   "stadium": {
     "date_built": "Built on the tilted polar plains, its stands set at deliberately odd angles.",
     "sponsors": "Backed by the eccentric independent guilds of the tilted world.",
-    "pitch_size": "Asymmetric within the rules — wider on one flank than the other, to the visitors' confusion.",
+    "pitch_size": "Asymmetric within the rules: wider on one flank than the other, to the visitors' confusion.",
     "pitch_type": "Hardy synthetic turf rated for the long, strange Uranian seasons.",
     "stand_names": ["The Skew Stand", "The Tilt End", "The Sideways Terrace"],
     "bio": "The Tilted Field disorients before kickoff: the stands lean, the sightlines are wrong, and the home side's lopsided football only deepens the confusion. Visitors rarely feel settled here."
@@ -26,7 +24,7 @@
   "training_facility": {
     "date_built": "A professional institute built, naturally, at an angle.",
     "sponsors": "Funded by the world's independent-minded guilds.",
-    "bio": "The Sideways Athletic Institute drills the unconventional — overloads, switches, and lateral movement designed to pull defences out of shape. Orthodoxy is gently discouraged."
+    "bio": "The Sideways Athletic Institute drills the unconventional: overloads, switches, and lateral movement designed to pull defences out of shape. Orthodoxy is gently discouraged."
   },
   "manager": {
     "gender": "Male",

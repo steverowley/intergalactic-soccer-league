@@ -8,11 +8,9 @@
     "home_kit": "Sand-tan and brown with a drifting-dune pattern.",
     "away_kit": "Faded ochre with brown trim.",
     "third_kit": "Dusk-purple with a wandering-trail motif.",
-    "history": "Pallas Wanderers have no fixed identity and make a virtue of it — a balanced, adaptable side that shifts its approach to suit any opponent. Rootless and flexible, they are nobody's easy game.",
+    "history": "Pallas Wanderers have no fixed identity and make a virtue of it: a balanced, adaptable side that shifts its approach to suit any opponent. Rootless and flexible, they are nobody's easy game.",
     "club_culture": "Restless, adaptable, and self-reliant. The Drifters belong to no one and adjust to everyone.",
-    "political_leaning": "Belt free-prospector — fiercely independent and suspicious of all authority.",
-    "trophy_cabinet": ["A reputation for upsetting sides that underestimate them"],
-    "legends": ["Rove Castan — the versatile captain who played every position with distinction"],
+    "political_leaning": "Belt free-prospector: fiercely independent and suspicious of all authority.",
     "achievements": ["Most tactically varied side in the belt"]
   },
   "stadium": {
@@ -21,12 +19,12 @@
     "pitch_size": "Standard, kept flexible to suit the shifting game plan.",
     "pitch_type": "Hardy synthetic turf rated for low gravity.",
     "stand_names": ["The Castan Stand", "The Drift End", "The Prospectors' Terrace"],
-    "bio": "The Drifter is a modest, modular ground with a transient feel — fitting for a club that prides itself on never being pinned down. Away teams rarely know which Pallas will turn up."
+    "bio": "The Drifter is a modest, modular ground with a transient feel, fitting for a club that prides itself on never being pinned down. Away teams rarely know which Pallas will turn up."
   },
   "training_facility": {
     "date_built": "A basic facility, deliberately lean and portable.",
     "sponsors": "Funded modestly by the prospector guilds.",
-    "bio": "The Nomad Training Grounds drill versatility above all — every player learns multiple roles, so the Drifters can reshape themselves match to match."
+    "bio": "The Nomad Training Grounds drill versatility above all: every player learns multiple roles, so the Drifters can reshape themselves match to match."
   },
   "manager": {
     "gender": "Male",

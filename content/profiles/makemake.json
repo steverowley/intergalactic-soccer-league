@@ -8,11 +8,9 @@
     "home_kit": "Warm terracotta and cream with a creation-ray motif.",
     "away_kit": "Cream with terracotta sunburst.",
     "third_kit": "Deep earth-red with a single newborn star.",
-    "history": "Makemake are the Kuiper's artists — a possession side famed for conjuring chances from nothing on a shoestring budget. Where others see a dead end, the Makers thread a pass; their creative, patient football is a small miracle at the edge of the system.",
+    "history": "Makemake are the Kuiper's artists, a possession side famed for conjuring chances from nothing on a shoestring budget. Where others see a dead end, the Makers thread a pass; their creative, patient football is a small miracle at the edge of the system.",
     "club_culture": "Creative, devout, and resourceful. The Makers believe football is an act of creation.",
-    "political_leaning": "Kuiper-communalist — a co-operative club that shares everything it has.",
-    "trophy_cabinet": ["A reputation for creative football far beyond their means"],
-    "legends": ["Genesis Vail — the playmaker who made chances appear from thin vacuum"],
+    "political_leaning": "Kuiper-communalist: a co-operative club that shares everything it has.",
     "achievements": ["Most chances created per budget credit in the Kuiper"]
   },
   "stadium": {
@@ -26,7 +24,7 @@
   "training_facility": {
     "date_built": "A basic academy the community treasures.",
     "sponsors": "Funded communally by the settlement.",
-    "bio": "The Creation Academy drills technique, vision, and youth above all — the Makers grow their own creators, since they cannot afford to buy them."
+    "bio": "The Creation Academy drills technique, vision, and youth above all. The Makers grow their own creators, since they cannot afford to buy them."
   },
   "manager": {
     "gender": "Female",
@@ -34,7 +32,7 @@
     "age": 47,
     "nationality": "Makemakean",
     "appearance": "Calm and devout, watches her side weave patterns with a quiet smile.",
-    "bio": "Genesis Solano is a possession purist who conjures creative, patient football from a tiny budget. Her Makers keep the ball and craft chances from nothing — an act of faith and skill in equal measure.",
+    "bio": "Genesis Solano is a possession purist who conjures creative, patient football from a tiny budget. Her Makers keep the ball and craft chances from nothing: an act of faith and skill in equal measure.",
     "personality": "Patient, creative, and quietly devout.",
     "playing_history": "A playmaker who orchestrated games at small clubs.",
     "playing_philosophy": "Keep the ball and create. With patience and craft, something always appears.",
