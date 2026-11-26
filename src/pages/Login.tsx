@@ -110,8 +110,9 @@ export default function Login() {
   const [pendingConfirmEmail, setPendingConfirmEmail] = useState<string | null>(null);
 
   // Reset transient form state when the fan swaps between login and
-  // signup, so an error or a stuck "busy" from one mode never shows in the
-  // other. Done in the toggle's click handler, at the moment the mode
+  // signup, so an error, a stuck "busy" or a half-typed password from one
+  // mode never carries into the other (the email is kept: it is the same
+  // address either way, and retyping it is the only cost of clearing it). Done in the toggle's click handler, at the moment the mode
   // changes, rather than in an effect that watches `mode`: an effect would
   // paint the new mode with the stale error first and then render again
   // (react-hooks set-state-in-effect, #685). Selecting the mode already
@@ -121,6 +122,7 @@ export default function Login() {
     setMode(next);
     setError(null);
     setBusy(false);
+    setPassword('');
   };
 
   // Authenticated users have no business on /login. Redirect to /profile,

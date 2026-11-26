@@ -112,6 +112,25 @@ describe('Login mode swap (#365)', () => {
     expect(submitButton().textContent).toBe('Create account');
   });
 
+  it('clears the typed password but keeps the email when the mode changes', () => {
+    renderLogin();
+    typeInto('email', 'fan@example.com');
+    typeInto('password', 'half-typed-signup-pass');
+    fireEvent.click(modeTab('Sign up'));
+    expect((document.getElementById('password') as HTMLInputElement).value).toBe('');
+    expect((document.getElementById('email') as HTMLInputElement).value).toBe('fan@example.com');
+    typeInto('password', 'another-password');
+    fireEvent.click(modeTab('Log in'));
+    expect((document.getElementById('password') as HTMLInputElement).value).toBe('');
+  });
+
+  it('keeps the password when the fan clicks the mode already shown', () => {
+    renderLogin();
+    typeInto('password', 'still-typing');
+    fireEvent.click(modeTab('Log in'));
+    expect((document.getElementById('password') as HTMLInputElement).value).toBe('still-typing');
+  });
+
   it('leaves the error alone when the fan clicks the mode already shown', () => {
     renderLogin();
     fireEvent.click(submitButton());
