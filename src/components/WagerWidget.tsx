@@ -92,10 +92,11 @@ function WagerWidget({ match }: { match: MatchRef }) {
 
   const [odds,       setOdds]       = useState<OddsRow | null>(null);
   const [existing,   setExisting]   = useState<ExistingWager | null>(null);
-  const [loaded,     setLoaded]     = useState(false);
   // Re-fetch trigger: incremented after a successful placement so the
   // existing-wager card flips without a full page reload.
   const [refreshKey, setRefreshKey] = useState(0);
+  // Which request the odds and wager above belong to (see `fetchKey`).
+  const [settledKey, setSettledKey] = useState<string | null>(null);
 
   const [side,       setSide]       = useState<WagerSide | null>(null);
   const [stake,      setStake]      = useState(DEFAULT_STAKE);
@@ -104,14 +105,23 @@ function WagerWidget({ match }: { match: MatchRef }) {
 
   const isScheduled = match?.status === 'scheduled';
 
+  // One key per request: the match, the signed-in fan (or none) and the
+  // refresh counter. `loaded` is DERIVED from it rather than set from the
+  // effect: the widget is loaded once the fetch for the current key has
+  // settled, so a new match, a sign-in or a placement shows the loading line
+  // again until its own answer lands. A match that is not bettable (no id,
+  // or not scheduled) needs no fetch, so it counts as loaded straight away.
+  // Deriving it means the effect never sets state synchronously, which
+  // would cost an extra render on every change (react-hooks
+  // set-state-in-effect, #685).
+  const fetchKey = `${match?.id ?? ''}|${user?.id ?? ''}|${refreshKey}`;
+  const needsFetch = Boolean(match?.id) && isScheduled;
+  const loaded = !needsFetch || settledKey === fetchKey;
+
   // Parallel fetch on mount: odds + (if signed in) existing wager.
   useEffect(() => {
-    if (!match?.id || !isScheduled) {
-      setLoaded(true);
-      return undefined;
-    }
+    if (!match?.id || !isScheduled) return undefined;
     let cancelled = false;
-    setLoaded(false);
     (async () => {
       try {
         const [o, w] = await Promise.all([
@@ -121,15 +131,15 @@ function WagerWidget({ match }: { match: MatchRef }) {
         if (cancelled) return;
         setOdds(o as OddsRow | null);
         setExisting(w as ExistingWager | null);
-        setLoaded(true);
+        setSettledKey(fetchKey);
       } catch (err) {
         if (cancelled) return;
         console.warn('[WagerWidget] fetch failed:', err);
-        setLoaded(true);
+        setSettledKey(fetchKey);
       }
     })();
     return () => { cancelled = true; };
-  }, [publicDb, db, match?.id, user, isScheduled, refreshKey]);
+  }, [publicDb, db, match?.id, user, isScheduled, fetchKey]);
 
   // Compute the potential payout for the currently-selected side + stake.
   // Pure derivation: re-runs on every keystroke without any round-trip.

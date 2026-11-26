@@ -113,7 +113,10 @@ export default function Profile() {
   const [deleteBusy, setDeleteBusy] = useState(false);
 
   const [teams, setTeams] = useState<TeamOption[]>([]);
-  const [players, setPlayers] = useState<PlayerOption[]>([]);
+  // The roster fetched for one club, tagged with that club's id. The picker
+  // shows it only while that club is still the one selected (see `players`
+  // below), so a stale roster never needs clearing from an effect.
+  const [roster, setRoster] = useState<{ teamId: string; players: PlayerOption[] } | null>(null);
 
   // ── Admin gate ─────────────────────────────────────────────────────────────
   // Derived from `profiles.is_admin` (server-side column, migration 0032).
@@ -132,12 +135,18 @@ export default function Profile() {
 
   // Mirror profile to local state once the auth provider finishes
   // hydrating. Only resets when the profile id changes, preserving the
-  // user's in-flight edits across a background re-render.
-  useEffect(() => {
-    if (!profile) return;
+  // user's in-flight edits across a background re-render (a profile
+  // refresh after saving keeps the same id, so it changes nothing here).
+  // Adjusted during render, the pattern React documents for "state that
+  // follows a prop", rather than in an effect: an effect would paint the
+  // empty picker first and then render again (react-hooks
+  // set-state-in-effect, #685).
+  const [mirroredProfileId, setMirroredProfileId] = useState<string | null>(null);
+  if (profile && profile.id !== mirroredProfileId) {
+    setMirroredProfileId(profile.id);
     setTeamId(profile.favourite_team_id ?? NO_PLAYER);
     setPlayerId(profile.favourite_player_id ?? NO_PLAYER);
-  }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   // Fetch the team picker options once on mount: the catalogue is stable
   // across the session.
@@ -159,23 +168,23 @@ export default function Profile() {
   // initial hydration). Empty teamId gives an empty roster so the player
   // select renders just the "No preference" option.
   useEffect(() => {
-    if (!teamId) {
-      setPlayers([]);
-      return undefined;
-    }
+    if (!teamId) return undefined;
     let cancelled = false;
     getPlayersForTeam(publicDb, teamId)
       .then((rows) => {
-        if (!cancelled) setPlayers((rows ?? []) as unknown as PlayerOption[]);
+        if (!cancelled) setRoster({ teamId, players: (rows ?? []) as unknown as PlayerOption[] });
       })
       .catch((err) => {
         console.warn('[Profile] getPlayersForTeam failed:', err);
-        if (!cancelled) setPlayers([]);
+        if (!cancelled) setRoster({ teamId, players: [] });
       });
     return () => {
       cancelled = true;
     };
   }, [publicDb, teamId]);
+  // The player options for the selected club: its own fetched roster, or
+  // none while it loads and when no club is chosen.
+  const players = roster && roster.teamId === teamId ? roster.players : [];
 
   // Team options grouped by league, for the picker's <optgroup>s. Memoised
   // so the bucketing doesn't run on every keystroke in the form.

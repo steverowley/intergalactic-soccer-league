@@ -324,7 +324,12 @@ function ClickerWidget({ user, player }: { user: TrainingUser; player: TrainingP
   const db = useSupabase();
 
   const [lifetimeXp, setLifetimeXp] = useState<number>(0);
-  const [loaded, setLoaded] = useState<boolean>(false);
+  // The player whose lifetime XP has been fetched (successfully or not).
+  // `loaded` is derived from it rather than reset from the fetch effect,
+  // so the effect never sets state synchronously (react-hooks
+  // set-state-in-effect, #685): a new player reads as not loaded at once.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const loaded = loadedFor === player.id;
 
   // Cooldown end timestamp (ms since epoch); null when no cooldown is
   // active. The displayed countdown re-renders on COOLDOWN_TICK_MS.
@@ -347,16 +352,15 @@ function ClickerWidget({ user, player }: { user: TrainingUser; player: TrainingP
   // this effect fires once per mount.
   useEffect(() => {
     let cancelled = false;
-    setLoaded(false);
     getPlayerLifetimeXp(db, player.id)
       .then((xp) => {
         if (cancelled) return;
         setLifetimeXp(xp);
-        setLoaded(true);
+        setLoadedFor(player.id);
       })
       .catch(() => {
         if (cancelled) return;
-        setLoaded(true);
+        setLoadedFor(player.id);
       });
     return () => {
       cancelled = true;

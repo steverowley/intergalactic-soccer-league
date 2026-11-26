@@ -21,7 +21,7 @@
 // exposes signIn / signUp helpers that wrap Supabase's email and password
 // flows; this page is presentation and validation only.
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -109,13 +109,19 @@ export default function Login() {
   // being silently dropped at / (the pre-#365 bug).
   const [pendingConfirmEmail, setPendingConfirmEmail] = useState<string | null>(null);
 
-  // Reset transient form state on mode swap so values entered in one
-  // mode don't bleed into the other (e.g. a half-typed signup password
-  // shouldn't auto-populate the login form).
-  useEffect(() => {
+  // Reset transient form state when the fan swaps between login and
+  // signup, so an error or a stuck "busy" from one mode never shows in the
+  // other. Done in the toggle's click handler, at the moment the mode
+  // changes, rather than in an effect that watches `mode`: an effect would
+  // paint the new mode with the stale error first and then render again
+  // (react-hooks set-state-in-effect, #685). Selecting the mode already
+  // shown changes nothing, exactly as the old effect (keyed on `mode`) did.
+  const switchMode = (next: Mode): void => {
+    if (next === mode) return;
+    setMode(next);
     setError(null);
     setBusy(false);
-  }, [mode]);
+  };
 
   // Authenticated users have no business on /login. Redirect to /profile,
   // as a render-time <Navigate> rather than a useEffect navigate so the
@@ -241,14 +247,14 @@ export default function Login() {
         <Stack role="group" aria-label="Log in or sign up" direction="row" gap={8} style={{ marginBottom: space[24] }}>
           <Tag
             selected={mode === MODE_LOGIN}
-            onClick={() => setMode(MODE_LOGIN)}
+            onClick={() => switchMode(MODE_LOGIN)}
             style={{ minHeight: 44, flex: 1, justifyContent: 'center' }}
           >
             Log in
           </Tag>
           <Tag
             selected={signingUp}
-            onClick={() => setMode(MODE_SIGNUP)}
+            onClick={() => switchMode(MODE_SIGNUP)}
             style={{ minHeight: 44, flex: 1, justifyContent: 'center' }}
           >
             Sign up
