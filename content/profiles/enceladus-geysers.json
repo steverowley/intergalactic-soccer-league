@@ -11,8 +11,6 @@
     "history": "Enceladus Geysers do one thing spectacularly: they erupt. A modest, youthful side with little money, they sit deep, absorb pressure, and then explode forward in sudden, devastating counters that have humbled far richer clubs.",
     "club_culture": "Patient then explosive, and proud of their underdog status. The Eruption love nothing more than ambushing a giant.",
     "political_leaning": "Frontier-independent, with the open-minded streak of a research colony.",
-    "trophy_cabinet": ["A reputation as everyone's least favourite away trip"],
-    "legends": ["Vex Tarn — the counterattacking striker who scored the colony's most famous goal"],
     "achievements": ["Most goals scored on the counter in the league"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Standard, with deep space behind to launch the counter into.",
     "pitch_type": "Hardy synthetic turf rated for the moon's deep cold.",
     "stand_names": ["The Tarn Stand", "The Plume End", "The Spray Terrace"],
-    "bio": "The Spray is a tight, functional bowl where the small crowd erupts in unison with every breaking counter — a sudden roar that mirrors the geysers outside."
+    "bio": "The Spray is a tight, functional bowl where the small crowd erupts in unison with every breaking counter, a sudden roar that mirrors the geysers outside."
   },
   "training_facility": {
     "date_built": "A standard-grade complex run on a research-colony budget.",
@@ -34,7 +32,7 @@
     "age": 42,
     "nationality": "Enceladean",
     "appearance": "Sharp and quick, paces the technical area waiting for the moment to spring.",
-    "bio": "Crystal Murai turns poverty into a weapon — her Geysers defend deep and patiently, then erupt forward the instant they win the ball. She has built a side that punches far above its modest budget.",
+    "bio": "Crystal Murai turns poverty into a weapon: her Geysers defend deep and patiently, then erupt forward the instant they win the ball. She has built a side that punches far above its modest budget.",
     "personality": "Patient, opportunistic, and fearless against bigger names.",
     "playing_history": "A quick counterattacking forward who played her whole career at small clubs.",
     "playing_philosophy": "Absorb, wait, erupt. Let them have the ball until the moment it costs them everything.",

@@ -8,11 +8,9 @@
     "home_kit": "Deep ocean blue with flowing wave-line gradients down the body.",
     "away_kit": "Pale seafoam with blue trim and a rippling current motif.",
     "third_kit": "Abyssal black with bioluminescent blue seams.",
-    "history": "Europa Oceanic are the pioneers of fluid football — a side that moves like water, flowing around opponents in endless interchanging patterns. Raised in the weightless calm of the subsurface ocean, they play with a grace that makes possession look effortless and inevitable.",
+    "history": "Europa Oceanic are the pioneers of fluid football, a side that moves like water, flowing around opponents in endless interchanging patterns. Raised in the weightless calm of the subsurface ocean, they play with a grace that makes possession look effortless and inevitable.",
     "club_culture": "Graceful, fluid, and quietly confident. The Deep believe football should flow, never force.",
     "political_leaning": "Frontier progressive, with the contemplative calm of the ocean depths.",
-    "trophy_cabinet": ["A cabinet of cups won with style", "Admired across the system for their fluid play"],
-    "legends": ["Nerin Cole — the playmaker who made the ball flow like a current"],
     "achievements": ["Pioneers of the fluid interchange now studied league-wide"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Generously large, to let the fluid interchange breathe.",
     "pitch_type": "Pristine engineered turf grown under the dome's managed light.",
     "stand_names": ["The Cole Stand", "The Current End", "The Abyss Terrace", "The Ice Ceiling Gallery"],
-    "bio": "The Ice Bowl is an eerie, beautiful venue — a glowing dome beneath kilometres of ice and ocean, where the crowd's roar carries strangely through the water. Visiting players describe it as playing inside a dream."
+    "bio": "The Ice Bowl is an eerie, beautiful venue: a glowing dome beneath kilometres of ice and ocean, where the crowd's roar carries strangely through the water. Visiting players describe it as playing inside a dream."
   },
   "training_facility": {
     "date_built": "A professional institute built into the habitat's research wing.",
@@ -34,7 +32,7 @@
     "age": 49,
     "nationality": "Europan",
     "appearance": "Serene and elegant, watches matches with the stillness of someone reading a tide.",
-    "bio": "Marina Crestfall is the high priestess of fluid possession — her Europa sides flow in endless interchanging patterns until an opening simply appears. She speaks softly and her teams play softly, right up until they slip a knife between your ribs.",
+    "bio": "Marina Crestfall is the high priestess of fluid possession: her Europa sides flow in endless interchanging patterns until an opening simply appears. She speaks softly and her teams play softly, right up until they slip a knife between your ribs.",
     "personality": "Serene, patient, and deeply cerebral.",
     "playing_history": "An elegant deep-lying playmaker who orchestrated games at a glide.",
     "playing_philosophy": "Football is water. Flow around the obstacle; never crash into it. Keep the ball moving and the game will yield.",

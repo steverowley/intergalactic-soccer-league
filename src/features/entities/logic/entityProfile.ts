@@ -115,7 +115,15 @@ const punditProfileSchema = z.object({
   commentary_style: z.string(),
 });
 
-/** Football club. Name, location, league, links to stadium/squad stay relational. */
+/**
+ * Football club. Name, location, league, links to stadium/squad stay relational.
+ *
+ * No honours or legends here: canon owns them (src/data/lore.ts, exported from
+ * the world bible). The old `trophy_cabinet` and `legends` lists contradicted
+ * the canon register and were removed from content and the database (#704,
+ * migration 0103). A stored profile that still carries them parses fine, the
+ * keys are simply dropped, so this change can deploy before the migration.
+ */
 const teamProfileSchema = z.object({
   date_founded: z.string(),
   fans_nickname: z.string(),
@@ -127,8 +135,6 @@ const teamProfileSchema = z.object({
   history: z.string(),
   club_culture: z.string(),
   political_leaning: z.string(),
-  trophy_cabinet: z.array(z.string()),
-  legends: z.array(z.string()),
   achievements: z.array(z.string()),
 });
 

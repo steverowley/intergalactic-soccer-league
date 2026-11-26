@@ -1,18 +1,16 @@
 {
   "team_id": "eris-wanderers",
   "team": {
-    "date_founded": "Founded on Eris, the most distant outpost in the leagues, by settlers who chose the edge of everything.",
+    "date_founded": "Founded on Eris, one of the most distant outposts in the leagues, by settlers who chose the edge of everything.",
     "fans_nickname": "The Discordant",
     "number_of_fans": "Around 5 million fiercely defiant edge-dwellers.",
     "badge": "A jagged star at the far edge of a thin disc, turned away from the sun.",
     "home_kit": "Deep void-violet and black with a fractured-star motif.",
     "away_kit": "Ash-grey with violet shards.",
     "third_kit": "Near-black with a single distant star.",
-    "history": "Eris Wanderers play with the chip-on-the-shoulder defiance of the system's most remote club. Counterattacking specialists who relish the long, lonely journey to every away game, they take grim pleasure in spoiling the parties of warmer, richer worlds.",
+    "history": "Eris Wanderers play with the chip-on-the-shoulder defiance of one of the system's most remote clubs. Counterattacking specialists who relish the long, lonely journey to every away game, they take grim pleasure in spoiling the parties of warmer, richer worlds.",
     "club_culture": "Defiant, hardy, and proudly contrarian. The Discordant exist to disrupt.",
-    "political_leaning": "Kuiper-separatist — the loudest voice for the outer worlds' independence.",
-    "trophy_cabinet": ["A reputation for ruining favourites' seasons"],
-    "legends": ["Strife Calder — the counterattacking captain who scored on the longest away trips"],
+    "political_leaning": "Kuiper-separatist: the loudest voice for the outer worlds' independence.",
     "achievements": ["Most away points won by a Kuiper side"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Standard, with deep space to launch the counter.",
     "pitch_type": "Basic frontier synthetic turf, hard-wearing.",
     "stand_names": ["The Calder Stand", "The Edge End", "The Outpost Terrace"],
-    "bio": "The Outpost is the most distant venue in the leagues — cold, defiant, and proud of how far visitors must travel to lose there. Few away days are more dreaded."
+    "bio": "The Outpost is the most distant venue in the leagues: cold, defiant, and proud of how far visitors must travel to lose there. Few away days are more dreaded."
   },
   "training_facility": {
     "date_built": "A basic facility at the edge of everything.",

@@ -8,11 +8,9 @@
     "home_kit": "Charcoal and deep green with a faint tunnel-light glow on the chest.",
     "away_kit": "Slate grey with green trim.",
     "third_kit": "Near-black with a single lantern emblem.",
-    "history": "Hygiea United are masters of the dark arts of defending — a subterranean side built on impregnable structure who smother opponents in the gloom of The Dark Pitch and dare them to find a way through.",
+    "history": "Hygiea United are masters of the dark arts of defending: a subterranean side built on impregnable structure who smother opponents in the gloom of The Dark Pitch and dare them to find a way through.",
     "club_culture": "Insular, disciplined, and defensively obsessive. The Shades trust the structure above all.",
-    "political_leaning": "Belt-isolationist — a closed, self-sufficient warren that keeps the system at arm's length.",
-    "trophy_cabinet": ["A long record of frustrating better-resourced sides"],
-    "legends": ["Umbra Vell — the sweeper who reputedly organised the league's best back line"],
+    "political_leaning": "Belt-isolationist: a closed, self-sufficient warren that keeps the system at arm's length.",
     "achievements": ["Fewest goals conceded in the belt across multiple seasons"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Compact and tight, perfect for a smothering block.",
     "pitch_type": "Hardy synthetic turf under managed tunnel-light.",
     "stand_names": ["The Vell Stand", "The Tunnel End", "The Warren Terrace"],
-    "bio": "The Dark Pitch is a low, dim, claustrophobic bowl deep underground where visiting players speak of losing their bearings — and of never finding a gap in the Shades' defence."
+    "bio": "The Dark Pitch is a low, dim, claustrophobic bowl deep underground where visiting players speak of losing their bearings, and of never finding a gap in the Shades' defence."
   },
   "training_facility": {
     "date_built": "A basic complex carved into a side-warren.",

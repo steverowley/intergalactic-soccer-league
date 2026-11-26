@@ -8,11 +8,9 @@
     "home_kit": "Molten orange and gunmetal with a forged-metal sheen.",
     "away_kit": "Bright steel-silver with orange seams.",
     "third_kit": "Blackened iron with ember flecks.",
-    "history": "Psyche Metallics are built on raw physical power — an aggressive, muscular side that out-muscles and out-fights opponents into submission. On the great metal asteroid, strength is everything, and the Forgers have plenty.",
+    "history": "Psyche Metallics are built on raw physical power: an aggressive, muscular side that out-muscles and out-fights opponents into submission. On the great metal asteroid, strength is everything, and the Forgers have plenty.",
     "club_culture": "Hard, physical, and aggressive. The Forgers believe football is a test of strength first.",
-    "political_leaning": "Belt industrial-syndicalist — a foundry-workers' club with muscle.",
-    "trophy_cabinet": ["A reputation as the belt's most physically dominant side"],
-    "legends": ["Anvil Strode — the midfield destroyer no one enjoyed facing"],
+    "political_leaning": "Belt industrial-syndicalist: a foundry-workers' club with muscle.",
     "achievements": ["Most duels and physical battles won in the belt"]
   },
   "stadium": {

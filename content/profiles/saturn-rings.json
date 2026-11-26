@@ -8,11 +8,9 @@
     "home_kit": "Royal purple and gold with a sweeping ring-band across the chest.",
     "away_kit": "Pale gold with purple trim and a thin halo line.",
     "third_kit": "Deep space-violet with a luminous golden ring.",
-    "history": "Saturn Rings play the most beautiful football in the gas giants — fluid movement, intricate passing, and a refusal to do anything ugly. Aristocratic and aesthetic, they would rather lose with grace than win without it, a creed that thrills neutrals and occasionally costs them.",
+    "history": "Saturn Rings play the most beautiful football in the gas giants: fluid movement, intricate passing, and a refusal to do anything ugly. Aristocratic and aesthetic, they would rather lose with grace than win without it, a creed that thrills neutrals and occasionally costs them.",
     "club_culture": "Refined, aesthetic, and proud of its beautiful traditions. The Haloed value how you win almost as much as whether you win.",
-    "political_leaning": "Saturnian old-aristocracy — cultured, conservative, and quietly grand.",
-    "trophy_cabinet": ["A graceful collection of titles won the beautiful way"],
-    "legends": ["Aurelia Sand — the playmaker whose passing was called living poetry"],
+    "political_leaning": "Saturnian old-aristocracy: cultured, conservative, and quietly grand.",
     "achievements": ["Most admired playing style in the outer leagues"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Generously wide, to let the beautiful game breathe.",
     "pitch_type": "Immaculate managed turf, kept fast and true for crisp passing.",
     "stand_names": ["The Sand Stand", "The Halo End", "The Ring Gallery"],
-    "bio": "Cassini Colosseum — The Halo — is among the most beautiful venues in the system, a ringed bowl that glows gold at dusk. The crowd applauds a perfect passing move as warmly as a goal."
+    "bio": "Cassini Colosseum (The Halo) is among the most beautiful venues in the system, a ringed bowl that glows gold at dusk. The crowd applauds a perfect passing move as warmly as a goal."
   },
   "training_facility": {
     "date_built": "A professional complex on the inner ring's calmest band.",
@@ -34,7 +32,7 @@
     "age": 51,
     "nationality": "Saturnian",
     "appearance": "Silver-haired and impeccably dressed, watches matches like a patron at the opera.",
-    "bio": "Helios Voss is a possession aesthete who believes football is an art form first and a contest second. His Saturn sides pass with intricate, shifting beauty — and he changes formation mid-match like a composer changing key.",
+    "bio": "Helios Voss is a possession aesthete who believes football is an art form first and a contest second. His Saturn sides pass with intricate, shifting beauty, and he changes formation mid-match like a composer changing key.",
     "personality": "Cultured, calm, and quietly demanding of beauty.",
     "playing_history": "An elegant playmaker of the old school.",
     "playing_philosophy": "Keep the ball, move it beautifully, and reshape the team until the opponent simply cannot follow.",

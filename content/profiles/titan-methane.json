@@ -8,11 +8,9 @@
     "home_kit": "Murky orange and brown with a swirling haze pattern that obscures the number.",
     "away_kit": "Smoke-grey with faint orange seams.",
     "third_kit": "Deep methane-amber fading into shadow.",
-    "history": "Titan Methane are the system's enigma — a hardy, patient side raised in thick atmosphere who specialise in the unsettling, counterattacking ambush. Opponents say playing them is like grasping at smoke: nothing seems to happen, and then suddenly the ball is in the net.",
+    "history": "Titan Methane are the system's enigma: a hardy, patient side raised in thick atmosphere who specialise in the unsettling, counterattacking ambush. Opponents say playing them is like grasping at smoke: nothing seems to happen, and then suddenly the ball is in the net.",
     "club_culture": "Patient, secretive, and quietly tough. The Haze reveal nothing and punish everything.",
     "political_leaning": "Frontier-independent, with the guarded reserve of an isolated moon.",
-    "trophy_cabinet": ["A reputation for ambushing the unwary"],
-    "legends": ["Vapor Sturm — the counterattacking striker who scored from nowhere, again and again"],
     "achievements": ["Most goals scored in the final fifteen minutes"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Standard, with deep space to launch the ambush.",
     "pitch_type": "Hardy synthetic turf rated for the dense, frigid air.",
     "stand_names": ["The Sturm Stand", "The Haze End", "The Hydrocarbon Terrace"],
-    "bio": "The Orange Haze is a strange, half-lit dome where the murky atmosphere seems to seep onto the pitch. Visiting players speak of losing track of the ball — and of the Haze's counterattacks materialising out of the gloom."
+    "bio": "The Orange Haze is a strange, half-lit dome where the murky atmosphere seems to seep onto the pitch. Visiting players speak of losing track of the ball, and of the Haze's counterattacks materialising out of the gloom."
   },
   "training_facility": {
     "date_built": "A professional campus built into the hydrocarbon harvest works.",
@@ -34,7 +32,7 @@
     "age": 50,
     "nationality": "Titanian",
     "appearance": "Inscrutable and still, gives nothing away from the technical area.",
-    "bio": "Haze Kowalski is a master of the patient ambush — his Titan sides sit deep in the murk, absorb everything, and strike on the counter when opponents least expect it. He says little and reveals less.",
+    "bio": "Haze Kowalski is a master of the patient ambush: his Titan sides sit deep in the murk, absorb everything, and strike on the counter when opponents least expect it. He says little and reveals less.",
     "personality": "Guarded, patient, and quietly cunning.",
     "playing_history": "A counterattacking forward who specialised in the late, decisive goal.",
     "playing_philosophy": "Give them nothing to see, then strike from the haze. Patience is a weapon; surprise is the kill.",

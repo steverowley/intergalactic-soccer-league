@@ -8,11 +8,9 @@
     "home_kit": "Iron grey and black with a riveted-plate texture across the chest.",
     "away_kit": "Ore-brown with grey trim and a thin seam-line of silver.",
     "third_kit": "Deep core-black with a single grey strike-line.",
-    "history": "Ganymede United are football's labourers — a club founded by miners and built on endurance, organisation, and refusal to yield. They defend in deep, disciplined banks and grind opponents down with sheer unbreakable solidity. It is unglamorous, and they are proud of that.",
+    "history": "Ganymede United are football's labourers: a club founded by miners and built on endurance, organisation, and refusal to yield. They defend in deep, disciplined banks and grind opponents down with sheer unbreakable solidity. It is unglamorous, and they are proud of that.",
     "club_culture": "Working-class, solid, and stubbornly collective. The Miners value graft over glamour and solidarity over stars.",
-    "political_leaning": "Frontier labour-collectivist — a union club to its bones.",
-    "trophy_cabinet": ["A long record of defensive resilience and hard-won points"],
-    "legends": ["Bedrock Hale — the centre-back who anchored the famous immovable defence"],
+    "political_leaning": "Frontier labour-collectivist: a union club to its bones.",
     "achievements": ["Most clean sheets in the league across multiple seasons"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Compact, suited to the deep, narrow defensive banks.",
     "pitch_type": "Hardy synthetic turf rated for the moon's heavy gravity.",
     "stand_names": ["The Hale Stand", "The Shaft End", "The Union Terrace"],
-    "bio": "Crater Fields — The Cradle — is a heavy, hard-working ground where the crowd appreciates a block as loudly as a goal. Away forwards leave frustrated and bruised."
+    "bio": "Crater Fields (The Cradle) is a heavy, hard-working ground where the crowd appreciates a block as loudly as a goal. Away forwards leave frustrated and bruised."
   },
   "training_facility": {
     "date_built": "A professional academy built to grow loyal, hard-working talent.",

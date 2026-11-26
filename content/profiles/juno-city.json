@@ -8,11 +8,9 @@
     "home_kit": "Royal purple and white with a clean geometric city-grid pattern.",
     "away_kit": "White with purple trim and a thin skyline silhouette.",
     "third_kit": "Slate with luminous grid lines.",
-    "history": "Juno City are the belt's disciplinarians — a balanced, organised side that values structure and tactical order above all. They rarely beat themselves, and that, in the chaotic belt, is half the battle won.",
+    "history": "Juno City are the belt's disciplinarians: a balanced, organised side that values structure and tactical order above all. They rarely beat themselves, and that, in the chaotic belt, is half the battle won.",
     "club_culture": "Orderly, civic-minded, and tactically disciplined. The Civics believe in doing things properly.",
-    "political_leaning": "Belt civic-institutionalist — the belt's voice of law and order.",
-    "trophy_cabinet": ["A steady record built on consistency rather than flair"],
-    "legends": ["Statute Vorn — the captain who embodied the club's disciplined order"],
+    "political_leaning": "Belt civic-institutionalist: the belt's voice of law and order.",
     "achievements": ["Fewest cards and most disciplined record in the belt"]
   },
   "stadium": {
@@ -21,7 +19,7 @@
     "pitch_size": "Full regulation, immaculately maintained.",
     "pitch_type": "Well-kept synthetic turf, true and even.",
     "stand_names": ["The Vorn Stand", "The Civic End", "The Forum Terrace"],
-    "bio": "The Temple is the belt's grandest civic venue — orderly, well-run, and quietly imposing. Visiting sides find a disciplined, knowledgeable crowd that punishes indiscipline with scorn."
+    "bio": "The Temple is the belt's grandest civic venue: orderly, well-run, and quietly imposing. Visiting sides find a disciplined, knowledgeable crowd that punishes indiscipline with scorn."
   },
   "training_facility": {
     "date_built": "A well-organised standard complex run with civic efficiency.",
