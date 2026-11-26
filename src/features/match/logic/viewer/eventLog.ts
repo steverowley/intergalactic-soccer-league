@@ -115,8 +115,6 @@ export interface EventRow {
 export interface EventLogLookup {
   /** Which side a roster index plays for (an own goal is credited to the other side). */
   sideOf?(player: number): TeamSide | null;
-  /** Where and when the ball met a goal frame before a woodwork action (emitted later, when the shot is resolved). */
-  frameHitBefore?(sec: number): { sec: number } | null;
 }
 
 /** Restart kinds that get a row ('keeper', his own release, does not). */
@@ -167,11 +165,10 @@ export function buildEventLog(track: ActionTrack | null | undefined, lookup: Eve
         add(kind, sec, i, 1, a.by, shot.by);
         break;
       }
-      case 'woodwork': {
-        const hit = lookup.frameHitBefore?.(sec) ?? null;
-        add('woodwork', hit ? hit.sec : sec, i, 1, a.by, null);
+      case 'woodwork':
+        // Recorded at the tick the ball met the frame.
+        add('woodwork', sec, i, 1, a.by, null);
         break;
-      }
       case 'kick': {
         if (!isShotKick(a)) break;
         const out = wideAfter(acts, i, sec, dt);

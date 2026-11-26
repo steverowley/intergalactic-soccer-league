@@ -232,7 +232,8 @@ while the match is simulated, read-only, from three sources:
 | kick | `SimConfig.observer.kick`: a new read-only engine hook (both twins) called wherever a `KickInfo` is set on the ball (every strike, throw, header, poke, parry and deflection). `onTick` alone would miss a pass touched in the tick it was struck. |
 | dive | `SimConfig.observer.dive`: called where a keeper commits (his read of the shot, the penalty guess); target and height from his `dive`. |
 | restart | `onTick`: each new `world.restart` (kind, taker, spot; `readyTick` is `readyAt` rounded up to a tick, at least one after it began). |
-| tackle, interception, foul (+ card), goal, woodwork, offside, substitution | the engine's own `SimEvent` list, one action per event at its exact tick. An own goal's scorer is the last man to touch the ball; an offside sits at the free kick it gave. |
+| tackle, interception, foul (+ card), goal, offside, substitution | the engine's own `SimEvent` list, one action per event at its exact tick. An own goal's scorer is the last man to touch the ball; an offside sits at the free kick it gave. |
+| woodwork | one action per woodwork `SimEvent`, placed at the tick the ball met the frame. The engine emits the event later, when the shot is resolved after the rebound, but sets `woodwork` on the shot's `KickInfo` in the tick the frame is struck; the recorder keeps every kick it is shown and notes, in `onTick`, the tick that flag turns on. |
 
 Passes, shots, saves, penalties and balls out are not separate actions:
 they are the kicks, dives and restarts above.
@@ -546,7 +547,7 @@ its replay file.
 |---|---|---|
 | GOAL / OWN GOAL | the ball over the line | the scorer |
 | SAVE / PARRY / CATCH | a keeper's dive that answered a shot (`shots.ts`: a shot in the 3 game s before; the same rule as the slow-motion replays); PARRY when his next touch is a parry; dropped when the ball goes in within 2 game s (the GOAL row covers it) | keeper from shooter |
-| WOODWORK | when the ball met the frame (found in the ball track; the engine's event comes later) | the shooter |
+| WOODWORK | when the ball met the frame (the recorder places the action at that tick; the engine's event comes later) | the shooter |
 | WIDE | a shot that goes out for a goal kick within 4 game s with nobody touching it | the shooter |
 | TACKLE | the tackle | winner wins it from loser |
 | INTERCEPTION | the interception | who |

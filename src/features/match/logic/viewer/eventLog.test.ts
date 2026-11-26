@@ -107,7 +107,6 @@ describe('buildEventLog: which actions get a row', () => {
   it('woodwork names the shooter, at the moment the ball met the frame', () => {
     const t = track({ kind: 'woodwork', tick: tick(80), by: 9 });
     expect(buildEventLog(t)).toEqual([expect.objectContaining({ kind: 'woodwork', who: 9, sec: 80 })]);
-    expect(buildEventLog(t, { frameHitBefore: (sec) => ({ sec: sec - 2.5 }) })[0]!.sec).toBeCloseTo(77.5);
   });
 
   it('a shot out for a goal kick is WIDE, before the GOAL KICK row', () => {

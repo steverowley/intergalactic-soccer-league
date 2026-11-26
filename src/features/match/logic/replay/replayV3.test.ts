@@ -34,11 +34,20 @@ function stats(base: number, role: Role): SimPlayerStats {
   };
 }
 
+/**
+ * A 36-character id (production ids are UUIDs; the size check needs the same
+ * length). The slot index is zero-padded BEFORE the id is padded out: padding
+ * `H-s-1` and `H-s-10` with zeros gives the same string, which merged
+ * player 1 and player 10 into one roster entry (#743).
+ */
+function playerId(prefix: string, tag: string, i: number): string {
+  return `${prefix}-${tag}-${String(i).padStart(2, '0')}-`.padEnd(36, '0');
+}
+
 /** A side with a bench, so the engine's substitutions are in the replay. */
 function team(prefix: string, base: number): SpatialTeamInput {
   const mk = (role: Role, i: number, tag: string): SpatialPlayerInput => ({
-    // Production ids are 36-character UUIDs; the size check needs the same.
-    id: `${prefix}-${tag}-${i}`.padEnd(36, '0'), name: `${prefix} ${tag}${i}`, role, stats: stats(base, role),
+    id: playerId(prefix, tag, i), name: `${prefix} ${tag}${i}`, role, stats: stats(base, role),
   });
   return { formation: '4-4-2', players: XI.map((r, i) => mk(r, i, 's')), bench: BENCH.map((r, i) => mk(r, i, 'b')) };
 }
@@ -86,6 +95,13 @@ beforeAll(async () => {
 }, 180_000);
 
 describe('v3 replay of a full simulated match', () => {
+  it('gives every player in the fixture his own id (no padding collisions)', () => {
+    const ids = [team('H', 72), team('A', 68)].flatMap((t) => [...t.players, ...(t.bench ?? [])].map((p) => p.id));
+    expect(ids.length).toBe(2 * (XI.length + BENCH.length));
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) expect(id.length).toBe(36);
+  });
+
   it('recording never alters the match', () => {
     expect(recorded).toBe(plain);
   });
