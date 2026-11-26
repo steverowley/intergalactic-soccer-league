@@ -4023,6 +4023,9 @@ function createActionRecorder() {
   const goalTouch = /* @__PURE__ */ new Map();
   let goalsSeen = 0;
   let lastBallZ = 0;
+  let watched = [];
+  const struck = /* @__PURE__ */ new WeakSet();
+  const frameTicks = /* @__PURE__ */ new Map();
   const tickOf = (world) => Math.round(world.clockSec / world.dtSec);
   const settle2 = (keeperId, outcome) => {
     const d = open2.get(keeperId);
@@ -4037,6 +4040,7 @@ function createActionRecorder() {
   };
   const kick = (k, world) => {
     const tick = tickOf(world);
+    if (!k.resolved) watched.push(k);
     let label = k.kind;
     let delivery = null;
     if (pending !== null && world.restart === null && k.playerId === pending.r.takerId) {
@@ -4102,6 +4106,22 @@ function createActionRecorder() {
       goalsSeen = goals;
     }
     lastBallZ = world.ball.z;
+    const current = world.ball.kick;
+    if (current !== null && !current.resolved && !watched.includes(current)) watched.push(current);
+    for (const k of watched) {
+      if (!k.woodwork || struck.has(k)) continue;
+      struck.add(k);
+      const ticks = frameTicks.get(k.playerId);
+      if (ticks) ticks.push(tick);
+      else frameTicks.set(k.playerId, [tick]);
+    }
+    watched = current !== null && !current.resolved && !struck.has(current) ? [current] : [];
+  };
+  const frameTickOf = (by, eventTick) => {
+    const ticks = by === null ? void 0 : frameTicks.get(by);
+    if (!ticks) return eventTick;
+    for (let i = ticks.length - 1; i >= 0; i--) if (ticks[i] <= eventTick) return ticks[i];
+    return eventTick;
   };
   const actions = (events) => {
     const out = recorded.slice();
@@ -4122,7 +4142,7 @@ function createActionRecorder() {
           out.push({ kind: "goal", tick, by: by ?? goalTouch.get(tick) ?? null, side: e.side ?? "home" });
           break;
         case "woodwork":
-          out.push({ kind: "woodwork", tick, by });
+          out.push({ kind: "woodwork", tick: frameTickOf(by, tick), by });
           break;
         case "offside": {
           const at = offsideSpot.get(tick) ?? { x: 0, y: 0 };

@@ -10,7 +10,11 @@
 //   - every SimEvent of every kind has its action one-for-one (count, tick,
 //     players): tackles, interceptions, fouls with their card, goals,
 //     woodwork, offsides, substitutions, passes (as kicks), balls out and
-//     goals and fouls (as the restarts they set up);
+//     goals and fouls (as the restarts they set up); a woodwork action sits
+//     at the tick the ball met the frame (the engine's 'frame' trace), not
+//     at its event's later tick;
+//   - a red card is in the track at its foul, and the player sent off
+//     touches the ball no more;
 //   - every kick the engine makes appears once with its kind: the oracle is
 //     the engine's trace sink, which records each strike, header, poke,
 //     parry and block where it happens;
@@ -26,6 +30,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { simulateSpatialMatch, type SpatialTeamInput } from '../spatial/simulateSpatialMatch';
+import { islFixture, islTeam } from '../calibration/islFixture';
 import { toSpatialTeamInput } from '../spatial/spatialEventAdapter';
 import type { KickKind, SimEvent, TraceRecord } from '../spatial/types';
 import { createReplayRecorder, type ReplayTrack } from './recorder';
@@ -55,14 +60,44 @@ function squad(i: number): SpatialTeamInput {
 const DT = 0.1;
 const tickOf = (tSec: number): number => Math.round(tSec / DT);
 
+/** The calibration schedule's match RED_CARD_MATCH (islFixture): see FIXTURES. */
+const RED_CARD_MATCH = 189;
+
 /**
- * Two real-squad matches chosen for coverage (scanned from seeds 1000 to
- * 1039): one with a penalty (the keeper's committed guess, the penalty
- * kick), one with an own goal (a goal the engine credits to nobody).
+ * Real-squad matches chosen for coverage.  The first two (bench squads,
+ * scanned from seeds 1000 to 1039): one with a penalty (the keeper's
+ * committed guess, the penalty kick), one with an own goal (a goal the
+ * engine credits to nobody).  No bench-squad seed in that scan had a red
+ * card, so the third is taken from the calibration fixture
+ * (calibration/islFixture.ts, every live club): matches 0 to 239 were
+ * scanned, 29 had a red card, and match 189 (Olympus Mons v Mercury
+ * Runners, seed 1189) was chosen because it has two red cards, one for
+ * each side, two shots off the woodwork and every other kind the tests
+ * below need (#743).
  */
-const FIXTURES = [
-  { label: 'a match with a penalty', h: 4, a: 0, seed: 1006, penalty: true, ownGoal: false },
-  { label: 'a match with an own goal', h: 5, a: 1, seed: 1019, penalty: false, ownGoal: true },
+const FIXTURES: Array<{
+  label: string;
+  teams: () => [SpatialTeamInput, SpatialTeamInput];
+  seed: number;
+  penalty: boolean;
+  ownGoal: boolean;
+  redCard: boolean;
+  woodwork: boolean;
+}> = [
+  { label: 'a match with a penalty', teams: () => [squad(4), squad(0)], seed: 1006, penalty: true, ownGoal: false, redCard: false, woodwork: false },
+  { label: 'a match with an own goal', teams: () => [squad(5), squad(1)], seed: 1019, penalty: false, ownGoal: true, redCard: false, woodwork: false },
+  {
+    label: 'a match with red cards',
+    teams: () => {
+      const fx = islFixture(RED_CARD_MATCH);
+      return [islTeam(fx.home), islTeam(fx.away)];
+    },
+    seed: islFixture(RED_CARD_MATCH).seed,
+    penalty: false,
+    ownGoal: false,
+    redCard: true,
+    woodwork: true,
+  },
 ];
 
 /** A recorded action of one kind. */
@@ -108,10 +143,9 @@ function withoutActions(t: ReplayTrack): ReplayTrack {
 }
 
 /** Simulate one fixture three ways and read its replay back (fills the lets above). */
-async function load(h: number, a: number, s: number): Promise<void> {
+async function load(teams: [SpatialTeamInput, SpatialTeamInput], s: number): Promise<void> {
   seed = s;
-  home = squad(h);
-  away = squad(a);
+  [home, away] = teams;
   plain = JSON.stringify(simulateSpatialMatch(home, away, { seed }));
 
   // The recorder alone: what the simulate function runs.
@@ -152,7 +186,7 @@ const engineKind = (k: Rec<'kick'>): KickKind => k.delivery ?? k.kick;
 const sorted = (xs: string[]): string[] => xs.slice().sort();
 
 describe.each(FIXTURES)('$label', (fx) => {
-  beforeAll(() => load(fx.h, fx.a, fx.seed), 180_000);
+  beforeAll(() => load(fx.teams(), fx.seed), 180_000);
 
   describe('the action track of a full real-squad match', () => {
     it('recording never alters the match', () => {
@@ -168,6 +202,31 @@ describe.each(FIXTURES)('$label', (fx) => {
         // The keeper commits as the penalty is struck: a dive at the kick's tick.
         const kick = ofKind('kick').find((k) => k.kick === 'penalty')!;
         expect(ofKind('dive').some((d) => d.tick === kick.tick)).toBe(true);
+      }
+      if (fx.woodwork) {
+        // The woodwork action comes before its event: the ball met the frame
+        // first, the shot was resolved after the rebound.
+        const events = eventsOf('woodwork');
+        expect(events.length).toBeGreaterThan(0);
+        const early = ofKind('woodwork').filter((a, i) => a.tick < tickOf(events[i]!.tSec));
+        expect(early.length).toBeGreaterThan(0);
+      }
+      if (fx.redCard) {
+        const reds = eventsOf('foul').filter((e) => e.card === 'red');
+        expect(reds.length).toBeGreaterThan(0);
+        const redActions = ofKind('foul').filter((f) => f.card === 'red');
+        expect(redActions.map((f) => [f.tick, f.by].join())).toEqual(reds.map((e) => [tickOf(e.tSec), e.playerId].join()));
+        for (const f of redActions) {
+          // Sent off: he never touches the ball again.
+          expect(f.by).not.toBeNull();
+          expect(ofKind('kick').some((k) => k.by === f.by && k.tick > f.tick), `kick by ${f.by} after his red card`).toBe(false);
+        }
+        // The card survives the file: the decoded track carries it at the foul.
+        const decoded = snaps[0]!.actionTrack!;
+        const roster = decoded.roster!;
+        const decodedReds = decoded.actions.filter((x) => x.kind === 'foul' && x.card === 'red');
+        expect(decodedReds.map((x) => [x.tick, roster[(x as { by: number }).by]].join()))
+          .toEqual(redActions.map((f) => [f.tick, f.by].join()));
       }
       if (fx.ownGoal) {
         const og = eventsOf('goal').find((e) => !e.playerId)!;
@@ -200,8 +259,18 @@ describe.each(FIXTURES)('$label', (fx) => {
         if (e.playerId) expect(a.by).toBe(e.playerId);
         expect(a.by).not.toBeNull();
       });
-      const wood = eventsOf('woodwork').map((e) => [tickOf(e.tSec), e.playerId].join());
-      expect(ofKind('woodwork').map((a) => [a.tick, a.by].join())).toEqual(wood);
+      // Woodwork: one action per event, by the shooter, at the tick the ball
+      // met the frame.  The oracle is the engine's 'frame' trace: the last
+      // frame strike at or before the event (the event itself comes later,
+      // when the shot is resolved after the rebound).
+      const frameTicks = traces.filter((t) => t.kind === 'frame').map((t) => tickOf(t.tSec));
+      const wood = eventsOf('woodwork').map((e) => {
+        const at = tickOf(e.tSec);
+        const struck = frameTicks.filter((t) => t <= at).at(-1);
+        expect(struck, `frame strike before the woodwork event at ${at}`).toBeDefined();
+        return [struck, e.playerId].join();
+      });
+      expect(sorted(ofKind('woodwork').map((a) => [a.tick, a.by].join()))).toEqual(sorted(wood));
       const off = eventsOf('offside').map((e) => [tickOf(e.tSec), e.playerId].join());
       expect(ofKind('offside').map((a) => [a.tick, a.by].join())).toEqual(off);
       const sub = eventsOf('substitution').map((e) => [tickOf(e.tSec), e.playerId, e.otherId].join());

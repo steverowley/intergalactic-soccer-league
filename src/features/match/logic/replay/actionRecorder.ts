@@ -22,7 +22,14 @@
 //                 point (a parry) or his own position (a catch).
 //   restart       onTick: each new `world.restart` (kind, taker, spot,
 //                 readyAt rounded up to the first tick it may be taken).
-//   tackle, interception, foul (+ card), goal, woodwork, offside, sub
+//   woodwork      one action per woodwork SimEvent (which shots count),
+//                 placed at the tick the ball met the frame.  The engine
+//                 emits the event later, when the shot is resolved after
+//                 the rebound, but it sets `woodwork` on the shot's
+//                 KickInfo in the very tick the frame is struck; the
+//                 recorder keeps each kick it was shown and, in onTick,
+//                 notes the tick that flag turned on.
+//   tackle, interception, foul (+ card), goal, offside, sub
 //                 the engine's own event list (SimEvent), one action per
 //                 event at its exact tick, handed over when the match ends.
 //                 An own goal's scorer is the last man to touch the ball;
@@ -98,6 +105,18 @@ export function createActionRecorder(): ActionRecorder {
   let goalsSeen = 0;
   /** Ball height at the end of the previous tick (a dive-less catch's height). */
   let lastBallZ = 0;
+  /**
+   * Kicks whose `woodwork` flag may still turn on: every kick shown to the
+   * observer since the last tick, plus the kick on the ball.  Kept by
+   * reference because the engine sets the flag on the KickInfo itself, and
+   * a kick can strike the frame and be replaced by the next touch inside
+   * one tick.
+   */
+  let watched: Array<Readonly<KickInfo>> = [];
+  /** Kicks already seen striking the frame. */
+  const struck = new WeakSet<Readonly<KickInfo>>();
+  /** Ticks the frame was struck, per shooter, oldest first. */
+  const frameTicks = new Map<string, number[]>();
 
   const tickOf = (world: Readonly<SimWorld>): number => Math.round(world.clockSec / world.dtSec);
 
@@ -117,6 +136,7 @@ export function createActionRecorder(): ActionRecorder {
 
   const kick = (k: Readonly<KickInfo>, world: Readonly<SimWorld>): void => {
     const tick = tickOf(world);
+    if (!k.resolved) watched.push(k);
     let label: KickKind = k.kind;
     let delivery: KickKind | null = null;
     // deadBallTick clears world.restart, then the taker kicks: this is the
@@ -187,6 +207,31 @@ export function createActionRecorder(): ActionRecorder {
       goalsSeen = goals;
     }
     lastBallZ = world.ball.z;
+
+    // A shot that met the frame during this tick.  Only the kick on the
+    // ball can strike the frame later, so it is the only one kept watching.
+    const current = world.ball.kick;
+    if (current !== null && !current.resolved && !watched.includes(current)) watched.push(current);
+    for (const k of watched) {
+      if (!k.woodwork || struck.has(k)) continue;
+      struck.add(k);
+      const ticks = frameTicks.get(k.playerId);
+      if (ticks) ticks.push(tick);
+      else frameTicks.set(k.playerId, [tick]);
+    }
+    watched = current !== null && !current.resolved && !struck.has(current) ? [current] : [];
+  };
+
+  /**
+   * The tick a woodwork event's shot struck the frame: the shooter's latest
+   * frame strike at or before the event (his own shot's strike, since a
+   * woodwork event always follows one).  Falls back to the event's tick.
+   */
+  const frameTickOf = (by: string | null, eventTick: number): number => {
+    const ticks = by === null ? undefined : frameTicks.get(by);
+    if (!ticks) return eventTick;
+    for (let i = ticks.length - 1; i >= 0; i--) if (ticks[i]! <= eventTick) return ticks[i]!;
+    return eventTick;
   };
 
   const actions = (events: readonly SimEvent[]): RecordedAction[] => {
@@ -208,7 +253,7 @@ export function createActionRecorder(): ActionRecorder {
           out.push({ kind: 'goal', tick, by: by ?? goalTouch.get(tick) ?? null, side: e.side ?? 'home' });
           break;
         case 'woodwork':
-          out.push({ kind: 'woodwork', tick, by });
+          out.push({ kind: 'woodwork', tick: frameTickOf(by, tick), by });
           break;
         case 'offside': {
           const at = offsideSpot.get(tick) ?? { x: 0, y: 0 };

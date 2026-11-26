@@ -249,11 +249,12 @@ describe('activeAnimations: windows', () => {
     expect(activeAnimations(t, q(after(80, ANIM_MS.flare + 10)), lookup).overlays).toEqual([]);
   });
 
-  it('woodwork flares when the ball met the frame, before the (later) woodwork event', () => {
-    const hitLookup: AnimLookup = { ...lookup, frameHitBefore: (sec) => ({ x: 0.2, y: 30.3, z: 1, sec: sec - 2.5 }) };
+  it('woodwork flares at its own tick, at the goal where the ball is then (the frame it struck)', () => {
+    const atNearPost: AnimLookup = { ...lookup, ballAt: () => ({ x: 0.2, y: 30.3, z: 1 }) };
     const t = track({ kind: 'woodwork', tick: tick(80), by: 9 });
-    expect(activeAnimations(t, q(after(77.5, 100)), hitLookup).overlays).toEqual([expect.objectContaining({ kind: 'flare', goalX: 0 })]);
-    expect(activeAnimations(t, q(after(77.5, ANIM_MS.flare + 10)), hitLookup).overlays).toEqual([]);
+    expect(activeAnimations(t, q(after(80, 100)), atNearPost).overlays).toEqual([expect.objectContaining({ kind: 'flare', goalX: 0 })]);
+    // Nothing before the frame is struck.
+    expect(activeAnimations(t, q(after(79, 100)), atNearPost).overlays).toEqual([]);
   });
 
   it('offside, a substitution, an interception and a pass put nothing on the pitch (the strip names them)', () => {
