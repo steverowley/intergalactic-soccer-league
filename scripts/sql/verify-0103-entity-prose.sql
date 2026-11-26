@@ -1,7 +1,7 @@
 -- Verify migration 0103 (entity profile prose house style and canon, #704). Read only.
--- Expected after applying: fp = 633e63a2e0c5702b674077815d1010dd, n = 181, dashed = 0, honours_lists = 0.
+-- Expected after applying: fp = 7c3a1b8a40484503541964b48b2114d2, n = 183, dashed = 0, honours_lists = 0.
 -- Before applying, the same query returns the live snapshot fingerprint
--- 49aa055e6d139cf90e8481e836c46fed (taken 2026-11-26).
+-- 604e8cfed4d6360c6913547e158185af (taken 2026-11-26).
 SELECT md5(string_agg(id::text || ':' || md5(meta::text), ',' ORDER BY id::text)) AS fp,
        count(*) AS n,
        count(*) FILTER (WHERE position(U&'\2014' IN meta::text) > 0) AS dashed,
@@ -92,6 +92,7 @@ WHERE  id IN (
   '80000000-0000-0000-0000-000000000022',
   '80000000-0000-0000-0000-000000000027',
   '80000000-0000-0000-0000-000000000030',
+  '80000000-0000-0000-0000-000000000031',
   '8070c2a5-b1f8-4df5-8669-a7fb96b52eef',
   '80d55360-2c53-4d2a-9fbe-cd10c833aab9',
   '81000000-0000-0000-0000-000000000001',
@@ -185,6 +186,7 @@ WHERE  id IN (
   'f3310230-56aa-48cb-b790-a2582dfa316b',
   'f4db9fdc-00cd-40cd-8829-1058250518ea',
   'f565d86c-57a2-4c62-a728-3745681700cf',
+  'f6b8d760-2c8b-44e1-8e18-e0a73da60fcb',
   'f83eb41c-9ddc-4b73-8383-e6b0c2196ccd',
   'fc10630f-6b30-453c-ac91-fb2d7abd6af8',
   'fd5053ab-535d-4bae-98b9-5209f8d07b88',

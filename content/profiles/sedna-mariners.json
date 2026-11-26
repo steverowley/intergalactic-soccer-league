@@ -14,12 +14,12 @@
     "achievements": ["Fewest goals conceded per match in the Kuiper"]
   },
   "stadium": {
-    "date_built": "A frontier ground on the most distant settled world.",
+    "date_built": "A frontier ground on one of the most distant settled worlds.",
     "sponsors": "Backed by the remote colony's long-haul survival funds.",
     "pitch_size": "Compact, suited to the deep, patient block.",
     "pitch_type": "Basic frontier synthetic turf, hard-wearing.",
     "stand_names": ["The Vask Stand", "The Perihelion End", "The Long Voyage Terrace"],
-    "bio": "The Long Way Round is the most distant, unhurried venue in the leagues, where the small crowd waits as patiently as the team for the moment to strike. Quick sides leave frustrated and pointless."
+    "bio": "The Long Way Round is one of the most distant, unhurried venues in the leagues, where the small crowd waits as patiently as the team for the moment to strike. Quick sides leave frustrated and pointless."
   },
   "training_facility": {
     "date_built": "A basic facility on the far frontier.",
