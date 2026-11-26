@@ -294,7 +294,8 @@ reach past that barrel. The `{api,logic,ui}/ + types.ts` shape is the ideal, not
 ## Match Simulation
 
 The live engine is the **spatial, agent-based physics engine**, the *only* engine since #389, run
-server-side by `supabase/functions/match-worker/index.ts` and invoked every minute by a `pg_cron` job.
+server-side by `supabase/functions/match-worker/index.ts` and invoked every 2 minutes by a `pg_cron` job
+(switched on only around fixtures by the scheduler governor, migration 0100).
 It's fully deterministic (seeded from the match UUID, `rng.ts` mulberry32) — same fixture always
 reproduces the same match. Lives in two byte-identical copies: `src/features/match/logic/spatial/`
 (browser + tests) and `supabase/functions/match-worker/spatial/` (Deno worker, can't import from
