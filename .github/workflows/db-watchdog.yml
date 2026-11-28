@@ -1,0 +1,71 @@
+# ── Database watchdog ─────────────────────────────────────────────────────────
+# Restarts the Supabase database when it freezes, and opens a `db-watchdog`
+# issue so the owner hears about it. See scripts/db-watchdog.mjs for the rules:
+# three failed `select 1` probes a minute apart, the control plane still saying
+# ACTIVE_HEALTHY, and no watchdog restart in the last 45 minutes.
+#
+# WHY: the free Nano instance has hung with a "healthy" status (2026-11-11,
+# 2026-11-28); only a restart fixes it, and that used to need the owner.
+#
+# COST: none. The repo is public, so Actions minutes are free; the job needs
+# no npm install (plain Node, global fetch) and finishes in seconds when the
+# database is healthy.
+#
+# Manual run (Actions tab): dry_run (default true) probes and reports without
+# restarting or opening an issue; simulate_hang makes every probe fail, to
+# exercise the decision path safely together with dry_run; test_alert opens and
+# closes a test issue to prove the owner's notification, touching nothing else.
+#
+# SECRET: SUPABASE_ACCESS_TOKEN (already set for the deploy workflows).
+
+name: Database watchdog
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Probe and report only: no restart, no issue'
+        type: boolean
+        default: true
+      simulate_hang:
+        description: 'Treat every probe as failed (use with dry_run to test)'
+        type: boolean
+        default: false
+      test_alert:
+        description: 'Open and close a test alert issue; probe and restart nothing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: db-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/db-watchdog.mjs
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Probe, and restart if frozen
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+          SIMULATE_HANG: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_hang && 'true' || 'false' }}
+          TEST_ALERT: ${{ github.event_name == 'workflow_dispatch' && inputs.test_alert && 'true' || 'false' }}
+        run: node scripts/db-watchdog.mjs
